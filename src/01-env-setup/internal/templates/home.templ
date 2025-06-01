@@ -1,0 +1,31 @@
+package templates
+
+templ Home() {
+	@Base("ホーム") {
+		<div class="container mx-auto px-4 py-8">
+			<h1 class="text-3xl font-bold text-center mb-8">Golang + HTMX + Alpine.js + Tailwind CSS</h1>
+			
+			<!-- Alpine.jsのサンプル -->
+			<div x-data="{ count: 0 }" class="bg-white p-6 rounded-lg shadow-md mb-6">
+				<h2 class="text-xl font-semibold mb-4">Alpine.js カウンター</h2>
+				<p class="mb-4">カウント: <span x-text="count" class="font-bold text-blue-600"></span></p>
+				<button @click="count++" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+					増加
+				</button>
+			</div>
+			
+			<!-- HTMXのサンプル -->
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-xl font-semibold mb-4">HTMX サンプル</h2>
+				<button 
+					hx-get="/api/greeting" 
+					hx-target="#greeting-result"
+					class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+				>
+					挨拶を取得
+				</button>
+				<div id="greeting-result" class="mt-4 p-4 bg-gray-100 rounded"></div>
+			</div>
+		</div>
+	}
+}

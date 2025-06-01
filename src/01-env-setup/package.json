@@ -1,0 +1,19 @@
+{
+  "name": "01-env-setup",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tailwindcss -i ./ui/static/css/input.css -o ./ui/static/css/main.css --watch",
+    "build": "tailwindcss -i ./ui/static/css/input.css -o ./ui/static/css/main.css --minify",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8"
+  }
+}

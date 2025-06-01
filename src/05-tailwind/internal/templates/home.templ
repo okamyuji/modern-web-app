@@ -1,0 +1,71 @@
+package templates
+
+templ Home() {
+	@Base("Tailwind CSS デモ - ホーム") {
+		<div class="space-y-8">
+			<!-- ヒーロー -->
+			<div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-8 md:p-12">
+				<h2 class="text-3xl md:text-4xl font-bold mb-4">Tailwind CSS 実用デモ</h2>
+				<p class="text-xl mb-6 text-blue-100">ユーティリティファーストによる効率的なスタイリング</p>
+				<div class="flex flex-wrap gap-4">
+					<a href="/components" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+						コンポーネント
+					</a>
+					<a href="/responsive" class="bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+						レスポンシブ
+					</a>
+					<a href="/animations" class="bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-800 transition-colors">
+						アニメーション
+					</a>
+				</div>
+			</div>
+
+			<!-- 機能グリッド -->
+			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+					<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+						<span class="text-2xl">🎨</span>
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">カスタムカラー</h3>
+					<p class="text-gray-600 dark:text-gray-300 text-sm">ブランドカラーとカスタムパレットの設定</p>
+				</div>
+
+				<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+					<div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-4">
+						<span class="text-2xl">📱</span>
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">レスポンシブ</h3>
+					<p class="text-gray-600 dark:text-gray-300 text-sm">モバイルファーストなブレークポイント</p>
+				</div>
+
+				<div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+					<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-4">
+						<span class="text-2xl">🌙</span>
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">ダークモード</h3>
+					<p class="text-gray-600 dark:text-gray-300 text-sm">完全なダークモードサポート</p>
+				</div>
+			</div>
+
+			<!-- 統計カード -->
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+				<div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-xl">
+					<div class="text-3xl font-bold">500+</div>
+					<div class="text-red-100 text-sm">ユーティリティクラス</div>
+				</div>
+				<div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl">
+					<div class="text-3xl font-bold">12</div>
+					<div class="text-green-100 text-sm">カラーパレット</div>
+				</div>
+				<div class="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white p-6 rounded-xl">
+					<div class="text-3xl font-bold">5</div>
+					<div class="text-yellow-100 text-sm">ブレークポイント</div>
+				</div>
+				<div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl">
+					<div class="text-3xl font-bold">∞</div>
+					<div class="text-blue-100 text-sm">カスタマイズ性</div>
+				</div>
+			</div>
+		</div>
+	}
+}

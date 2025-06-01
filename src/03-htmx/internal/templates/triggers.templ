@@ -1,0 +1,92 @@
+package templates
+
+templ Triggers() {
+	@Base("トリガー制御 - HTMX デモ") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">トリガー制御デモ</h2>
+				<a href="/" class="text-blue-500 hover:underline mb-4 inline-block">← ホームに戻る</a>
+				
+				<div class="grid gap-6">
+					<!-- キーボードイベント -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">キーボードイベント（遅延付き）</h3>
+						<input 
+							type="text" 
+							placeholder="検索キーワードを入力..."
+							hx-get="/api/search" 
+							hx-target="#search-result"
+							hx-trigger="keyup changed delay:500ms"
+							hx-params="*"
+							class="w-full p-2 border rounded"
+						/>
+						<div id="search-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[50px]"></div>
+					</div>
+
+					<!-- フォーカスイベント -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">フォーカスイベント</h3>
+						<input 
+							type="text" 
+							placeholder="フォーカス時にデータを読み込み"
+							hx-get="/api/focus-data" 
+							hx-target="#focus-result"
+							hx-trigger="focus"
+							class="w-full p-2 border rounded"
+						/>
+						<div id="focus-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[50px]"></div>
+					</div>
+
+					<!-- 定期実行 -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">定期実行（5秒間隔）</h3>
+						<div 
+							hx-get="/api/time" 
+							hx-target="#time-result"
+							hx-trigger="load, every 5s"
+							class="p-4 bg-blue-50 rounded"
+						>
+							時刻を定期更新中...
+						</div>
+						<div id="time-result" class="mt-4 p-4 bg-gray-100 rounded"></div>
+					</div>
+
+					<!-- 条件付きトリガー -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">条件付きトリガー（Ctrl+クリック）</h3>
+						<button 
+							hx-post="/api/special-action" 
+							hx-target="#special-result"
+							hx-trigger="click[ctrlKey]"
+							class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded"
+						>
+							Ctrl+クリックで特別なアクション
+						</button>
+						<div id="special-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[50px]"></div>
+					</div>
+
+					<!-- カスタムイベント -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">カスタムイベント</h3>
+						<button 
+							onclick="htmx.trigger('#custom-target', 'customEvent')"
+							class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded mr-2"
+						>
+							カスタムイベント発生
+						</button>
+						<div 
+							id="custom-target"
+							hx-get="/api/custom-response" 
+							hx-target="#custom-result"
+							hx-trigger="customEvent"
+							class="inline-block p-2 bg-yellow-100 rounded"
+						>
+							カスタムイベント待機中
+						</div>
+						<div id="custom-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[50px]"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

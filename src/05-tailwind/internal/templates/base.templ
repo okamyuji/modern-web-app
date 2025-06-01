@@ -1,0 +1,50 @@
+package templates
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="ja">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					darkMode: 'class',
+					theme: {
+						extend: {
+							colors: {
+								primary: {
+									50: '#eff6ff',
+									500: '#3b82f6',
+									600: '#2563eb',
+									900: '#1e3a8a'
+								}
+							}
+						}
+					}
+				}
+			</script>
+		</head>
+		<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+			<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+				<div class="container mx-auto px-4 py-4">
+					<div class="flex justify-between items-center">
+						<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tailwind CSS デモ</h1>
+						<button 
+							onclick="document.documentElement.classList.toggle('dark')"
+							class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+						>
+							🌓 ダークモード切替
+						</button>
+					</div>
+				</div>
+			</nav>
+			<main class="container mx-auto px-4 py-8">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}

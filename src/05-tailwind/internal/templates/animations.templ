@@ -1,0 +1,273 @@
+package templates
+
+templ Animations() {
+	@Base("Tailwind アニメーション") {
+		<div class="space-y-8">
+			<div class="text-center">
+				<h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Tailwind アニメーション</h2>
+				<p class="text-gray-600 dark:text-gray-400">トランジションとアニメーションの活用</p>
+			</div>
+
+			<!-- 基本トランジション -->
+			<section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">基本トランジション</h3>
+				
+				<div class="grid md:grid-cols-2 gap-6">
+					<div>
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">ホバーエフェクト</h4>
+						<div class="space-y-3">
+							<button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+								カラー変更
+							</button>
+							<button class="w-full bg-green-500 hover:scale-105 text-white py-2 px-4 rounded-lg transition-transform duration-200">
+								スケール変更
+							</button>
+							<button class="w-full bg-purple-500 hover:shadow-lg text-white py-2 px-4 rounded-lg transition-shadow duration-200">
+								シャドウ変更
+							</button>
+							<button class="w-full bg-red-500 hover:rotate-1 text-white py-2 px-4 rounded-lg transition-transform duration-200">
+								回転エフェクト
+							</button>
+						</div>
+					</div>
+
+					<div>
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">フォーカスエフェクト</h4>
+						<div class="space-y-3">
+							<input 
+								type="text" 
+								placeholder="フォーカスでボーダー色変更"
+								class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+							/>
+							<input 
+								type="text" 
+								placeholder="フォーカスでスケール変更"
+								class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:scale-105 transition-transform duration-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+							/>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- カスタムアニメーション -->
+			<section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">カスタムアニメーション</h3>
+				
+				<div class="grid md:grid-cols-3 gap-6">
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">パルス</h4>
+						<div class="w-16 h-16 bg-blue-500 rounded-full animate-pulse mx-auto"></div>
+						<code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-2 block">animate-pulse</code>
+					</div>
+
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">スピン</h4>
+						<div class="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+						<code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-2 block">animate-spin</code>
+					</div>
+
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">バウンス</h4>
+						<div class="w-16 h-16 bg-purple-500 rounded-lg animate-bounce mx-auto"></div>
+						<code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-2 block">animate-bounce</code>
+					</div>
+				</div>
+			</section>
+
+			<!-- インタラクティブカード -->
+			<section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">インタラクティブカード</h3>
+				
+				<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+					<div class="group bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-6 text-white cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+						<div class="flex items-center justify-between mb-4">
+							<h4 class="text-lg font-semibold">ホバーカード</h4>
+							<span class="text-2xl group-hover:rotate-12 transition-transform duration-300">🚀</span>
+						</div>
+						<p class="text-blue-100 text-sm">マウスオーバーで拡大とシャドウ効果</p>
+						<div class="mt-4 h-1 bg-white bg-opacity-30 rounded-full overflow-hidden">
+							<div class="h-full bg-white rounded-full transform transition-all duration-500 w-0 group-hover:w-full"></div>
+						</div>
+					</div>
+
+					<div class="group bg-gradient-to-br from-green-400 to-green-600 rounded-xl p-6 text-white cursor-pointer transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+						<div class="flex items-center justify-between mb-4">
+							<h4 class="text-lg font-semibold">リフトカード</h4>
+							<span class="text-2xl group-hover:animate-bounce">💎</span>
+						</div>
+						<p class="text-green-100 text-sm">マウスオーバーで上昇効果</p>
+						<div class="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+							<span class="text-xs text-green-200">✨ ホバー中</span>
+						</div>
+					</div>
+
+					<div class="group bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl p-6 text-white cursor-pointer transform transition-all duration-300 hover:rotate-3 hover:shadow-2xl">
+						<div class="flex items-center justify-between mb-4">
+							<h4 class="text-lg font-semibold">回転カード</h4>
+							<span class="text-2xl group-hover:rotate-45 transition-transform duration-300">⭐</span>
+						</div>
+						<p class="text-purple-100 text-sm">マウスオーバーで回転効果</p>
+						<div class="mt-4 transform transition-all duration-300 group-hover:scale-110">
+							<span class="text-xs text-purple-200">🔄 動的効果</span>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ローディングアニメーション -->
+			<section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">ローディングアニメーション</h3>
+				
+				<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">ドット</h4>
+						<div class="flex justify-center space-x-1">
+							<div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+							<div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+							<div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+						</div>
+					</div>
+
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">スピナー</h4>
+						<div class="mx-auto w-8 h-8 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+					</div>
+
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">パルス</h4>
+						<div class="mx-auto w-8 h-8 bg-purple-500 rounded-full animate-pulse"></div>
+					</div>
+
+					<div class="text-center">
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">バー</h4>
+						<div class="mx-auto w-12 h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+							<div class="h-full bg-red-500 rounded-full animate-pulse"></div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 状態変化アニメーション -->
+			<section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">状態変化アニメーション</h3>
+				
+				<div class="space-y-6">
+					<div>
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">アコーディオン風</h4>
+						<div x-data="{ open: false }" class="border border-gray-200 dark:border-gray-600 rounded-lg">
+							<button 
+								@click="open = !open"
+								class="w-full px-4 py-3 text-left flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+							>
+								<span class="font-medium text-gray-900 dark:text-white">クリックして展開</span>
+								<span x-text="open ? '−' : '+'" class="text-gray-500 dark:text-gray-400"></span>
+							</button>
+							<div 
+								x-show="open" 
+								x-transition:enter="transition ease-out duration-300"
+								x-transition:enter-start="opacity-0 transform -translate-y-2"
+								x-transition:enter-end="opacity-100 transform translate-y-0"
+								x-transition:leave="transition ease-in duration-200"
+								x-transition:leave-start="opacity-100 transform translate-y-0"
+								x-transition:leave-end="opacity-0 transform -translate-y-2"
+								class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
+							>
+								<p class="text-gray-600 dark:text-gray-300">
+									これは展開されるコンテンツです。Alpine.jsとTailwindのトランジションクラスを組み合わせることで、
+									スムーズなアニメーション効果を実現しています。
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">モーダル風</h4>
+						<div x-data="{ showModal: false }">
+							<button 
+								@click="showModal = true"
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+							>
+								モーダルを開く
+							</button>
+							
+							<div 
+								x-show="showModal"
+								x-transition:enter="transition ease-out duration-300"
+								x-transition:enter-start="opacity-0"
+								x-transition:enter-end="opacity-100"
+								x-transition:leave="transition ease-in duration-200"
+								x-transition:leave-start="opacity-100"
+								x-transition:leave-end="opacity-0"
+								class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+								@click.self="showModal = false"
+							>
+								<div 
+									x-show="showModal"
+									x-transition:enter="transition ease-out duration-300"
+									x-transition:enter-start="opacity-0 transform scale-90"
+									x-transition:enter-end="opacity-100 transform scale-100"
+									x-transition:leave="transition ease-in duration-200"
+									x-transition:leave-start="opacity-100 transform scale-100"
+									x-transition:leave-end="opacity-0 transform scale-90"
+									class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
+								>
+									<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">モーダルタイトル</h3>
+									<p class="text-gray-600 dark:text-gray-300 mb-4">
+										これはアニメーション付きのモーダルです。
+										背景のフェードインとモーダル本体のスケールアニメーションを組み合わせています。
+									</p>
+									<div class="flex justify-end space-x-2">
+										<button 
+											@click="showModal = false"
+											class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
+										>
+											閉じる
+										</button>
+										<button 
+											@click="showModal = false"
+											class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+										>
+											OK
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- パフォーマンス tips -->
+			<section class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-xl p-6">
+				<h3 class="text-xl font-semibold text-yellow-800 dark:text-yellow-200 mb-4">💡 アニメーションのベストプラクティス</h3>
+				<div class="grid md:grid-cols-2 gap-4">
+					<div>
+						<h4 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">推奨事項</h4>
+						<ul class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+							<li>• transform プロパティを優先使用</li>
+							<li>• 適切な duration 設定（200-300ms）</li>
+							<li>• will-change でパフォーマンス向上</li>
+							<li>• ユーザー設定の respect-motion を考慮</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">避けるべき事項</h4>
+						<ul class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+							<li>• 過度に長いアニメーション</li>
+							<li>• width/height の直接アニメーション</li>
+							<li>• 多数の同時アニメーション</li>
+							<li>• 必要以上の複雑なエフェクト</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- 戻るボタン -->
+			<div class="text-center">
+				<a href="/" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+					← ホームに戻る
+				</a>
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,349 @@
+package templates
+
+import (
+	"fmt"
+	"test-debug-demo/internal/models"
+	"test-debug-demo/internal/middleware"
+)
+
+templ Base(title string, isDev bool) {
+	<!DOCTYPE html>
+	<html lang="ja" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					darkMode: 'class',
+					theme: {
+						extend: {
+							colors: {
+								primary: {
+									50: '#eff6ff',
+									500: '#3b82f6',
+									600: '#2563eb',
+									900: '#1e3a8a'
+								}
+							}
+						}
+					}
+				}
+			</script>
+			if isDev {
+				@templ.Raw(middleware.DevToolsCSS())
+				@templ.Raw(middleware.HTMXDebugger())
+			}
+		</head>
+		<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+			<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+				<div class="container mx-auto px-4 py-4">
+					<div class="flex justify-between items-center">
+						<h1 class="text-2xl font-bold text-gray-900 dark:text-white">テスト&デバッグデモ</h1>
+						<div class="flex items-center space-x-4">
+							<a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">ホーム</a>
+							<a href="/todos" class="text-blue-600 dark:text-blue-400 hover:underline">TODO</a>
+							if isDev {
+								<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">DEV</span>
+							}
+							<button 
+								@click="darkMode = !darkMode"
+								class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+							>
+								<span x-show="!darkMode">🌙</span>
+								<span x-show="darkMode">☀️</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</nav>
+			<main class="container mx-auto px-4 py-8">
+				<div id="error-container"></div>
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ HomePage(todos []*models.Todo) {
+	@Base("テスト&デバッグデモ - ホーム", true) {
+		<div class="max-w-4xl mx-auto">
+			<div class="text-center mb-8">
+				<h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">第9章デモアプリケーション</h2>
+				<p class="text-gray-600 dark:text-gray-400 text-lg">包括的なテスト戦略とデバッグツールの実装例</p>
+			</div>
+
+			<div class="grid md:grid-cols-2 gap-8 mb-8">
+				<!-- テスト機能 -->
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+					<div class="flex items-center mb-4">
+						<div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mr-4">
+							<span class="text-2xl">🧪</span>
+						</div>
+						<div>
+							<h3 class="text-xl font-semibold text-gray-900 dark:text-white">テスト機能</h3>
+							<p class="text-gray-600 dark:text-gray-400 text-sm">ユニット・統合・E2Eテスト</p>
+						</div>
+					</div>
+					<ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+						<li>✓ ユニットテスト (testify)</li>
+						<li>✓ HTTPハンドラーテスト</li>
+						<li>✓ データベーステスト</li>
+						<li>✓ ベンチマークテスト</li>
+						<li>✓ E2Eテスト</li>
+					</ul>
+					<button 
+						onclick="runTests()"
+						class="inline-block w-full text-center bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+					>
+						テストを実行
+					</button>
+				</div>
+
+				<!-- デバッグ機能 -->
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+					<div class="flex items-center mb-4">
+						<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mr-4">
+							<span class="text-2xl">🐛</span>
+						</div>
+						<div>
+							<h3 class="text-xl font-semibold text-gray-900 dark:text-white">デバッグ機能</h3>
+							<p class="text-gray-600 dark:text-gray-400 text-sm">開発者向けデバッグツール</p>
+						</div>
+					</div>
+					<ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+						<li>✓ デバッグパネル</li>
+						<li>✓ パフォーマンス監視</li>
+						<li>✓ エラートレース</li>
+						<li>✓ HTMX/Alpine.jsデバッグ</li>
+						<li>✓ 構造化ログ</li>
+					</ul>
+					<button 
+						onclick="toggleDebugMode()"
+						class="inline-block w-full text-center bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
+					>
+						デバッグモード切替
+					</button>
+				</div>
+			</div>
+
+			<!-- TODO管理セクション -->
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">TODOアプリケーション</h3>
+				<p class="text-gray-600 dark:text-gray-400 mb-6">実際のアプリケーション機能をテストできます</p>
+				
+				<!-- TODO作成フォーム -->
+				<form 
+					hx-post="/todos"
+					hx-target="#todo-list"
+					hx-swap="beforeend"
+					class="mb-6"
+				>
+					<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+						<input 
+							type="text" 
+							name="title" 
+							placeholder="TODOタイトル"
+							class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+							required
+						/>
+						<input 
+							type="text" 
+							name="description" 
+							placeholder="説明（オプション）"
+							class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+						/>
+						<select 
+							name="priority"
+							class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+						>
+							<option value="low">低</option>
+							<option value="medium" selected>中</option>
+							<option value="high">高</option>
+						</select>
+						<button 
+							type="submit"
+							class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+						>
+							追加
+						</button>
+					</div>
+				</form>
+
+				<!-- TODOリスト -->
+				<div id="todo-list" class="space-y-3">
+					@TodoList(todos)
+				</div>
+			</div>
+
+			<!-- メトリクス表示 -->
+			<div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">リアルタイムメトリクス</h3>
+				<div 
+					id="metrics"
+					hx-get="/metrics"
+					hx-trigger="every 5s"
+					hx-swap="innerHTML"
+				>
+					メトリクス読み込み中...
+				</div>
+			</div>
+		</div>
+
+		<script>
+		function runTests() {
+			alert('テスト機能はサーバーサイドで実行されます。\ngo test ./... -v\nコマンドでテストを実行してください。');
+		}
+
+		function toggleDebugMode() {
+			const debugPanels = document.querySelectorAll('#debug-panel, .debug-info');
+			debugPanels.forEach(panel => {
+				panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+			});
+		}
+
+		// HTMXイベントのリスナー
+		document.body.addEventListener('htmx:afterRequest', function(evt) {
+			if (evt.detail.xhr.status >= 400) {
+				console.error('HTMX Request failed:', evt.detail);
+			}
+		});
+		</script>
+	}
+}
+
+templ TodoList(todos []*models.Todo) {
+	for _, todo := range todos {
+		@TodoItem(todo)
+	}
+	if len(todos) == 0 {
+		<div class="text-center py-8 text-gray-500 dark:text-gray-400">
+			TODOがありません。上のフォームから追加してください。
+		</div>
+	}
+}
+
+templ TodoItem(todo *models.Todo) {
+	<div 
+		class="flex items-center justify-between p-4 border rounded-lg"
+		class={ getPriorityClass(todo.Priority) }
+		data-todo-id={ fmt.Sprintf("%d", todo.ID) }
+		x-data="{ editing: false }"
+	>
+		<div class="flex items-center space-x-3 flex-1">
+			<input 
+				type="checkbox"
+				checked?={ todo.Completed }
+				hx-patch={ fmt.Sprintf("/todos/%d/toggle", todo.ID) }
+				hx-target={ fmt.Sprintf("[data-todo-id='%d']", todo.ID) }
+				hx-swap="outerHTML"
+				class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+			/>
+			<div class="flex-1">
+				<h4 class={ "font-medium", templ.KV("line-through text-gray-500", todo.Completed), templ.KV("text-gray-900 dark:text-white", !todo.Completed) }>
+					{ todo.Title }
+				</h4>
+				if todo.Description != "" {
+					<p class="text-sm text-gray-600 dark:text-gray-400">{ todo.Description }</p>
+				}
+				<div class="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+					<span>優先度: { getPriorityText(todo.Priority) }</span>
+					<span>•</span>
+					<span>{ todo.CreatedAt.Format("2006/01/02 15:04") }</span>
+				</div>
+			</div>
+		</div>
+		<div class="flex items-center space-x-2">
+			<button 
+				x-show="!editing"
+				@click="editing = true"
+				class="text-blue-600 hover:text-blue-800 text-sm"
+			>
+				編集
+			</button>
+			<button 
+				hx-delete={ fmt.Sprintf("/todos/%d", todo.ID) }
+				hx-target={ fmt.Sprintf("[data-todo-id='%d']", todo.ID) }
+				hx-swap="outerHTML"
+				hx-confirm="本当に削除しますか？"
+				class="text-red-600 hover:text-red-800 text-sm"
+			>
+				削除
+			</button>
+		</div>
+	</div>
+}
+
+templ ValidationErrors(errors []string) {
+	<div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4 mb-4">
+		<h4 class="text-red-800 dark:text-red-200 font-semibold mb-2">入力エラー</h4>
+		<ul class="list-disc list-inside space-y-1">
+			for _, error := range errors {
+				<li class="text-red-700 dark:text-red-300 text-sm">{ error }</li>
+			}
+		</ul>
+	</div>
+}
+
+templ MetricsDisplay(metrics map[string]interface{}) {
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+		<div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+			<div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+				{ fmt.Sprintf("%v", metrics["request_count"]) }
+			</div>
+			<div class="text-sm text-blue-500 dark:text-blue-300">リクエスト数</div>
+		</div>
+		<div class="bg-red-50 dark:bg-red-900 p-4 rounded-lg">
+			<div class="text-2xl font-bold text-red-600 dark:text-red-400">
+				{ fmt.Sprintf("%v", metrics["error_count"]) }
+			</div>
+			<div class="text-sm text-red-500 dark:text-red-300">エラー数</div>
+		</div>
+		<div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
+			<div class="text-2xl font-bold text-green-600 dark:text-green-400">
+				{ fmt.Sprintf("%v", metrics["avg_duration_ms"]) }
+			</div>
+			<div class="text-sm text-green-500 dark:text-green-300">平均処理時間(ms)</div>
+		</div>
+		<div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
+			<div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+				{ fmt.Sprintf("%v", metrics["active_requests"]) }
+			</div>
+			<div class="text-sm text-purple-500 dark:text-purple-300">アクティブリクエスト</div>
+		</div>
+	</div>
+	<div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+		<div>エラー率: { fmt.Sprintf("%v", metrics["error_rate"]) }</div>
+		<div>累計処理時間: { fmt.Sprintf("%.2f", metrics["total_duration_ms"]) }ms</div>
+	</div>
+}
+
+// ユーティリティ関数
+func getPriorityClass(priority string) string {
+	switch priority {
+	case "high":
+		return "bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700"
+	case "medium":
+		return "bg-yellow-50 dark:bg-yellow-900 border-yellow-200 dark:border-yellow-700"
+	case "low":
+		return "bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700"
+	default:
+		return "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+	}
+}
+
+func getPriorityText(priority string) string {
+	switch priority {
+	case "high":
+		return "高"
+	case "medium":
+		return "中"
+	case "low":
+		return "低"
+	default:
+		return "不明"
+	}
+}

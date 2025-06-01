@@ -1,0 +1,34 @@
+package templates
+
+templ Home() {
+	@Base("Alpine.js デモ - ホーム") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">Alpine.js の状態管理とイベント処理デモ</h2>
+				<p class="mb-4 text-gray-600">
+					以下のリンクをクリックして、各Alpine.js機能を体験してください。
+				</p>
+				<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+					<a href="/basic-state" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-center">
+						基本状態管理
+					</a>
+					<a href="/todo-app" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-center">
+						TODOアプリ
+					</a>
+					<a href="/event-handling" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-center">
+						イベント処理
+					</a>
+					<a href="/global-state" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-center">
+						グローバル状態
+					</a>
+					<a href="/htmx-integration" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-center">
+						HTMX統合
+					</a>
+					<a href="/advanced-patterns" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-center">
+						応用パターン
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,32 @@
+package templates
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="ja">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<style>
+				.htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+				.htmx-request .htmx-indicator { opacity: 1; }
+				.htmx-request.htmx-indicator { opacity: 1; }
+				[x-cloak] { display: none !important; }
+			</style>
+		</head>
+		<body class="bg-gray-100 min-h-screen" x-cloak>
+			<nav class="bg-indigo-600 text-white p-4">
+				<div class="container mx-auto">
+					<h1 class="text-2xl font-bold">Alpine.js デモアプリケーション</h1>
+					<p class="text-indigo-200">状態管理とイベント処理の実践</p>
+				</div>
+			</nav>
+			<main class="container mx-auto px-4 py-8">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}

@@ -1,0 +1,18 @@
+package templates
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="ja">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<link rel="stylesheet" href="/static/css/main.css"/>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		</head>
+		<body class="bg-gray-100 min-h-screen">
+			{ children... }
+		</body>
+	</html>
+}

@@ -1,0 +1,34 @@
+package templates
+
+templ Home() {
+	@Base("HTMX デモ - ホーム") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">HTMX の基本機能デモ</h2>
+				<p class="mb-4 text-gray-600">
+					以下のボタンをクリックして、各HTMX機能を体験してください。
+				</p>
+				<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+					<a href="/basic-requests" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-center">
+						基本リクエスト
+					</a>
+					<a href="/triggers" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-center">
+						トリガー制御
+					</a>
+					<a href="/targets" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-center">
+						ターゲット指定
+					</a>
+					<a href="/indicators" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-center">
+						読み込み表示
+					</a>
+					<a href="/forms" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-center">
+						フォーム処理
+					</a>
+					<a href="/progressive" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-center">
+						プログレッシブ
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}

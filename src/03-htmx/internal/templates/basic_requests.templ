@@ -1,0 +1,69 @@
+package templates
+
+templ BasicRequests() {
+	@Base("基本リクエスト - HTMX デモ") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">基本的なHTTPリクエスト</h2>
+				<a href="/" class="text-blue-500 hover:underline mb-4 inline-block">← ホームに戻る</a>
+				
+				<div class="grid gap-6">
+					<!-- GET リクエスト -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">GET リクエスト</h3>
+						<button 
+							hx-get="/api/users" 
+							hx-target="#get-result"
+							class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+						>
+							ユーザー一覧を取得
+						</button>
+						<div id="get-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[100px]"></div>
+					</div>
+
+					<!-- POST リクエスト -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">POST リクエスト</h3>
+						<button 
+							hx-post="/api/users" 
+							hx-target="#post-result"
+							hx-vals='{"name":"新しいユーザー","email":"new@example.com"}'
+							class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+						>
+							ユーザーを作成
+						</button>
+						<div id="post-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[100px]"></div>
+					</div>
+
+					<!-- PUT リクエスト -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">PUT リクエスト</h3>
+						<button 
+							hx-put="/api/echo" 
+							hx-target="#put-result"
+							hx-vals='{"message":"更新されました"}'
+							class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+						>
+							データを更新
+						</button>
+						<div id="put-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[100px]"></div>
+					</div>
+
+					<!-- DELETE リクエスト -->
+					<div class="border p-4 rounded">
+						<h3 class="text-lg font-semibold mb-2">DELETE リクエスト</h3>
+						<button 
+							hx-delete="/api/echo" 
+							hx-target="#delete-result"
+							hx-confirm="本当に削除しますか？"
+							class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+						>
+							データを削除
+						</button>
+						<div id="delete-result" class="mt-4 p-4 bg-gray-100 rounded min-h-[100px]"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

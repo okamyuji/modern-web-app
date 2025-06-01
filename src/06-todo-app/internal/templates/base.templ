@@ -1,0 +1,249 @@
+package templates
+
+import (
+	"fmt"
+	"todo-app/internal/models"
+)
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="ja" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					darkMode: 'class',
+					theme: {
+						extend: {
+							colors: {
+								primary: {
+									50: '#eff6ff',
+									500: '#3b82f6',
+									600: '#2563eb',
+									900: '#1e3a8a'
+								}
+							}
+						}
+					}
+				}
+			</script>
+		</head>
+		<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+			<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+				<div class="container mx-auto px-4 py-4">
+					<div class="flex justify-between items-center">
+						<h1 class="text-2xl font-bold text-gray-900 dark:text-white">TODO アプリケーション</h1>
+						<button 
+							@click="darkMode = !darkMode"
+							class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+						>
+							<span x-show="!darkMode">🌙</span>
+							<span x-show="darkMode">☀️</span>
+							<span class="ml-1 text-sm">テーマ切替</span>
+						</button>
+					</div>
+				</div>
+			</nav>
+			<main class="container mx-auto px-4 py-8">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ Home(todos []models.Todo, stats map[string]int, filter, search string) {
+	@Base("TODOリスト - ホーム") {
+		<div x-data="todoApp()" class="max-w-4xl mx-auto">
+			<h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">TODOリスト</h2>
+			
+			<!-- エラーメッセージ表示エリア -->
+			<div id="error-message" class="mb-4"></div>
+			
+			<!-- 統計情報 -->
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+				<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+					<div class="text-2xl font-bold text-gray-900 dark:text-white">{ fmt.Sprintf("%d", stats["total"]) }</div>
+					<div class="text-gray-600 dark:text-gray-400 text-sm">全タスク</div>
+				</div>
+				<div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow border border-blue-200 dark:border-blue-700">
+					<div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{ fmt.Sprintf("%d", stats["active"]) }</div>
+					<div class="text-gray-600 dark:text-gray-400 text-sm">未完了</div>
+				</div>
+				<div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg shadow border border-green-200 dark:border-green-700">
+					<div class="text-2xl font-bold text-green-600 dark:text-green-400">{ fmt.Sprintf("%d", stats["completed"]) }</div>
+					<div class="text-gray-600 dark:text-gray-400 text-sm">完了</div>
+				</div>
+				<div class="bg-red-50 dark:bg-red-900 p-4 rounded-lg shadow border border-red-200 dark:border-red-700">
+					<div class="text-2xl font-bold text-red-600 dark:text-red-400">{ fmt.Sprintf("%d", stats["overdue"]) }</div>
+					<div class="text-gray-600 dark:text-gray-400 text-sm">期限切れ</div>
+				</div>
+			</div>
+			
+			<!-- 新規TODO作成フォーム -->
+			<form 
+				hx-post="/todos"
+				hx-target="#todo-list"
+				hx-swap="afterbegin"
+				hx-on:htmx:after-request="if(event.detail.successful) this.reset()"
+				class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow mb-6 border border-gray-200 dark:border-gray-700"
+			>
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">新しいタスクを追加</h3>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							タイトル <span class="text-red-500">*</span>
+						</label>
+						<input 
+							type="text" 
+							name="title" 
+							required
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+							placeholder="タスクのタイトル"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							優先度
+						</label>
+						<select 
+							name="priority"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+						>
+							<option value="low">低</option>
+							<option value="medium" selected>中</option>
+							<option value="high">高</option>
+						</select>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							期限
+						</label>
+						<input 
+							type="date" 
+							name="due_date"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+							x-bind:min="new Date().toISOString().split('T')[0]"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							説明
+						</label>
+						<textarea 
+							name="description"
+							rows="2"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+							placeholder="タスクの詳細（任意）"
+						></textarea>
+					</div>
+				</div>
+				
+				<button 
+					type="submit"
+					class="mt-4 w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+				>
+					<span class="htmx-indicator">
+						<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+					</span>
+					タスクを追加
+				</button>
+			</form>
+			
+			<!-- フィルターと検索 -->
+			<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 border border-gray-200 dark:border-gray-700">
+				<div class="flex flex-col md:flex-row gap-4">
+					<div class="flex flex-wrap gap-2">
+						<button 
+							hx-get="/?filter="
+							hx-target="#todo-list"
+							hx-push-url="true"
+							class={ templ.KV("px-4 py-2 rounded-md transition-colors", true), templ.KV("bg-blue-600 text-white", filter == ""), templ.KV("bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500", filter != "") }
+						>
+							すべて
+						</button>
+						<button 
+							hx-get="/?filter=active"
+							hx-target="#todo-list"
+							hx-push-url="true"
+							class={ templ.KV("px-4 py-2 rounded-md transition-colors", true), templ.KV("bg-blue-600 text-white", filter == "active"), templ.KV("bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500", filter != "active") }
+						>
+							未完了
+						</button>
+						<button 
+							hx-get="/?filter=completed"
+							hx-target="#todo-list"
+							hx-push-url="true"
+							class={ templ.KV("px-4 py-2 rounded-md transition-colors", true), templ.KV("bg-blue-600 text-white", filter == "completed"), templ.KV("bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500", filter != "completed") }
+						>
+							完了
+						</button>
+						<button 
+							hx-get="/?filter=overdue"
+							hx-target="#todo-list"
+							hx-push-url="true"
+							class={ templ.KV("px-4 py-2 rounded-md transition-colors", true), templ.KV("bg-blue-600 text-white", filter == "overdue"), templ.KV("bg-red-200 dark:bg-red-600 text-red-700 dark:text-red-300 hover:bg-red-300 dark:hover:bg-red-500", filter != "overdue") }
+						>
+							期限切れ
+						</button>
+					</div>
+					
+					<div class="flex-1">
+						<input 
+							type="search"
+							name="search"
+							placeholder="検索..."
+							hx-get="/"
+							hx-trigger="keyup changed delay:500ms"
+							hx-target="#todo-list"
+							hx-include="[name='filter']"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+							value={ search }
+						/>
+					</div>
+				</div>
+			</div>
+			
+			<!-- TODOリスト -->
+			<div id="todo-list" class="space-y-2">
+				@TodoList(todos)
+			</div>
+		</div>
+		
+		<script>
+		function todoApp() {
+			return {
+				selectedTodos: [],
+				
+				toggleAll() {
+					// TODO: 一括操作の実装
+				},
+				
+				deleteSelected() {
+					if (this.selectedTodos.length > 0) {
+						if (confirm(`${this.selectedTodos.length}件のタスクを削除しますか？`)) {
+							// TODO: 一括削除の実装
+						}
+					}
+				}
+			}
+		}
+		
+		// HTMXイベントのグローバルハンドリング
+		document.body.addEventListener('htmx:responseError', function(evt) {
+			document.getElementById('error-message').innerHTML = 
+				'<div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" x-data x-init="setTimeout(() => $el.remove(), 5000)">操作中にエラーが発生しました。</div>';
+		});
+		</script>
+	}
+}

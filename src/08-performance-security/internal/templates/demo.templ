@@ -1,0 +1,445 @@
+package templates
+
+import (
+	"fmt"
+	"performance-security-demo/internal/db"
+)
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="ja" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<meta name="csrf-token" content="demo-token"/>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					darkMode: 'class',
+					theme: {
+						extend: {
+							colors: {
+								primary: {
+									50: '#eff6ff',
+									500: '#3b82f6',
+									600: '#2563eb',
+									900: '#1e3a8a'
+								}
+							}
+						}
+					}
+				}
+
+				// CSRF トークンを自動送信
+				document.body.addEventListener('htmx:configRequest', (event) => {
+					const token = document.querySelector('meta[name="csrf-token"]')?.content;
+					if (token) {
+						event.detail.headers['X-CSRF-Token'] = token;
+					}
+				});
+			</script>
+		</head>
+		<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+			<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+				<div class="container mx-auto px-4 py-4">
+					<div class="flex justify-between items-center">
+						<h1 class="text-2xl font-bold text-gray-900 dark:text-white">パフォーマンス・セキュリティデモ</h1>
+						<div class="flex items-center space-x-4">
+							<a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">ホーム</a>
+							<a href="/performance" class="text-blue-600 dark:text-blue-400 hover:underline">パフォーマンス</a>
+							<a href="/security" class="text-blue-600 dark:text-blue-400 hover:underline">セキュリティ</a>
+							<a href="/health" class="text-blue-600 dark:text-blue-400 hover:underline">ヘルスチェック</a>
+							<button 
+								@click="darkMode = !darkMode"
+								class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+							>
+								<span x-show="!darkMode">🌙</span>
+								<span x-show="darkMode">☀️</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</nav>
+			<main class="container mx-auto px-4 py-8">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ HomePage() {
+	@Base("パフォーマンス・セキュリティデモ - ホーム") {
+		<div class="max-w-4xl mx-auto">
+			<div class="text-center mb-8">
+				<h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">第8章デモアプリケーション</h2>
+				<p class="text-gray-600 dark:text-gray-400 text-lg">パフォーマンス最適化とセキュリティ機能の実装例</p>
+			</div>
+
+			<div class="grid md:grid-cols-2 gap-8">
+				<!-- パフォーマンスデモ -->
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+					<div class="flex items-center mb-4">
+						<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-4">
+							<span class="text-2xl">⚡</span>
+						</div>
+						<div>
+							<h3 class="text-xl font-semibold text-gray-900 dark:text-white">パフォーマンス最適化</h3>
+							<p class="text-gray-600 dark:text-gray-400 text-sm">データベース・HTTP最適化の実例</p>
+						</div>
+					</div>
+					<ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+						<li>✓ N+1問題の解決</li>
+						<li>✓ インデックス最適化</li>
+						<li>✓ 圧縮・キャッシュ</li>
+						<li>✓ 構造化ログ</li>
+					</ul>
+					<a 
+						href="/performance"
+						class="inline-block w-full text-center bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+					>
+						パフォーマンスデモを見る
+					</a>
+				</div>
+
+				<!-- セキュリティデモ -->
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+					<div class="flex items-center mb-4">
+						<div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mr-4">
+							<span class="text-2xl">🔒</span>
+						</div>
+						<div>
+							<h3 class="text-xl font-semibold text-gray-900 dark:text-white">セキュリティ機能</h3>
+							<p class="text-gray-600 dark:text-gray-400 text-sm">CSRF・XSS・SQLインジェクション対策</p>
+						</div>
+					</div>
+					<ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+						<li>✓ CSRF対策</li>
+						<li>✓ 入力検証・サニタイゼーション</li>
+						<li>✓ セキュリティヘッダー</li>
+						<li>✓ レート制限</li>
+					</ul>
+					<a 
+						href="/security"
+						class="inline-block w-full text-center bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+					>
+						セキュリティデモを見る
+					</a>
+				</div>
+			</div>
+
+			<!-- 技術スタック -->
+			<div class="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">技術スタック</h3>
+				<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+					<div class="text-center">
+						<div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<span class="text-2xl">🐹</span>
+						</div>
+						<h4 class="font-semibold text-gray-900 dark:text-white">Go</h4>
+						<p class="text-sm text-gray-600 dark:text-gray-400">高性能バックエンド</p>
+					</div>
+					<div class="text-center">
+						<div class="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<span class="text-2xl">🗄️</span>
+						</div>
+						<h4 class="font-semibold text-gray-900 dark:text-white">PostgreSQL</h4>
+						<p class="text-sm text-gray-600 dark:text-gray-400">最適化されたDB</p>
+					</div>
+					<div class="text-center">
+						<div class="w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<span class="text-2xl">🌐</span>
+						</div>
+						<h4 class="font-semibold text-gray-900 dark:text-white">HTMX</h4>
+						<p class="text-sm text-gray-600 dark:text-gray-400">動的UI</p>
+					</div>
+					<div class="text-center">
+						<div class="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<span class="text-2xl">🎨</span>
+						</div>
+						<h4 class="font-semibold text-gray-900 dark:text-white">Tailwind</h4>
+						<p class="text-sm text-gray-600 dark:text-gray-400">モダンCSS</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ PerformancePage(todos []db.TodoWithTags, duration float64) {
+	@Base("パフォーマンス最適化デモ") {
+		<div class="max-w-6xl mx-auto">
+			<div class="mb-8">
+				<h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">パフォーマンス最適化デモ</h2>
+				<div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+					<div class="flex items-center">
+						<span class="text-blue-600 dark:text-blue-400 mr-2">⚡</span>
+						<p class="text-blue-800 dark:text-blue-200">
+							クエリ実行時間: <strong>{ fmt.Sprintf("%.2f", duration) }ms</strong> 
+							（N+1問題を回避した最適化クエリ）
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- リロードボタン -->
+			<div class="mb-6">
+				<button 
+					hx-get="/performance"
+					hx-target="#todo-list"
+					hx-swap="innerHTML"
+					class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+				>
+					<span class="htmx-indicator">
+						<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+					</span>
+					データを再読み込み
+				</button>
+			</div>
+
+			<!-- TODOリスト -->
+			<div id="todo-list">
+				@TodoList(todos)
+			</div>
+
+			<!-- パフォーマンス説明 -->
+			<div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">最適化のポイント</h3>
+				<div class="grid md:grid-cols-2 gap-6">
+					<div>
+						<h4 class="font-semibold text-gray-900 dark:text-white mb-2">データベース最適化</h4>
+						<ul class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+							<li>• JOINとサブクエリでN+1問題を解決</li>
+							<li>• JSON集約でタグデータを効率的に取得</li>
+							<li>• インデックスを活用した高速検索</li>
+							<li>• コネクションプールの最適化</li>
+						</ul>
+					</div>
+					<div>
+						<h4 class="font-semibold text-gray-900 dark:text-white mb-2">HTTP最適化</h4>
+						<ul class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+							<li>• gzip圧縮でレスポンスサイズ削減</li>
+							<li>• 静的リソースの長期キャッシュ</li>
+							<li>• Keep-Aliveでコネクション再利用</li>
+							<li>• HTMXによる部分更新で帯域節約</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ TodoList(todos []db.TodoWithTags) {
+	<div class="grid gap-4">
+		for _, todo := range todos {
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+				<div class="flex items-start justify-between">
+					<div class="flex-1">
+						<h3 class={ "text-lg font-semibold", templ.KV("text-gray-900 dark:text-white", !todo.Completed), templ.KV("text-gray-500 dark:text-gray-400 line-through", todo.Completed) }>
+							{ todo.Title }
+						</h3>
+						<p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+							作成日: { todo.CreatedAt.Format("2006/01/02 15:04") }
+						</p>
+						
+						<!-- タグ表示 -->
+						if len(todo.Tags) > 0 {
+							<div class="flex flex-wrap gap-2 mt-2">
+								for _, tag := range todo.Tags {
+									<span 
+										class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
+										style={ fmt.Sprintf("background-color: %s", tag.Color) }
+									>
+										{ tag.Name }
+									</span>
+								}
+							</div>
+						}
+					</div>
+					
+					<div class="ml-4 flex items-center">
+						if todo.Completed {
+							<span class="text-green-500">✓</span>
+						} else {
+							<span class="text-gray-400">○</span>
+						}
+					</div>
+				</div>
+			</div>
+		}
+		
+		if len(todos) == 0 {
+			<div class="text-center py-8 text-gray-500 dark:text-gray-400">
+				表示するTODOがありません
+			</div>
+		}
+	</div>
+}
+
+templ SecurityPage() {
+	@Base("セキュリティデモ") {
+		<div class="max-w-4xl mx-auto">
+			<div class="mb-8">
+				<h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">セキュリティ機能デモ</h2>
+				<p class="text-gray-600 dark:text-gray-400">CSRF対策、入力検証、サニタイゼーションの実装例</p>
+			</div>
+
+			<!-- セキュリティフォーム -->
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">入力検証・サニタイゼーションテスト</h3>
+				
+				<form 
+					hx-post="/security"
+					hx-target="#security-result"
+					hx-swap="innerHTML"
+					class="space-y-4"
+				>
+					<input type="hidden" name="csrf_token" value="demo-token"/>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							ユーザー名 (3-20文字の英数字・アンダースコア)
+						</label>
+						<input 
+							type="text" 
+							name="username" 
+							placeholder="例: user_123"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							メールアドレス
+						</label>
+						<input 
+							type="email" 
+							name="email" 
+							placeholder="例: user@example.com"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+						/>
+					</div>
+					
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							コメント (HTMLタグテスト)
+						</label>
+						<textarea 
+							name="comment" 
+							rows="3"
+							placeholder="例: <script>alert('XSS')</script>この<strong>太字</strong>は許可されます"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+						></textarea>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							危険なタグは除去され、安全なタグ（b, i, u, strong, em）のみ許可されます
+						</p>
+					</div>
+					
+					<button 
+						type="submit"
+						class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+					>
+						送信してセキュリティチェック
+					</button>
+				</form>
+				
+				<div id="security-result" class="mt-6"></div>
+			</div>
+
+			<!-- 検索デモ -->
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">安全な検索（SQLインジェクション対策）</h3>
+				
+				<div class="mb-4">
+					<input 
+						type="search"
+						placeholder="検索クエリを入力... (例: '; DROP TABLE todos; --)"
+						hx-get="/search"
+						hx-trigger="keyup changed delay:500ms"
+						hx-target="#search-results"
+						hx-include="this"
+						name="q"
+						class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+					/>
+					<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+						プレースホルダー使用により、SQLインジェクション攻撃を防御
+					</p>
+				</div>
+				
+				<div id="search-results"></div>
+			</div>
+		</div>
+	}
+}
+
+templ ValidationErrors(errors []string) {
+	<div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">
+		<h4 class="text-red-800 dark:text-red-200 font-semibold mb-2">入力エラー</h4>
+		<ul class="list-disc list-inside space-y-1">
+			for _, error := range errors {
+				<li class="text-red-700 dark:text-red-300 text-sm">{ error }</li>
+			}
+		</ul>
+	</div>
+}
+
+templ SecurityResult(result map[string]string) {
+	<div class="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-4">
+		<h4 class="text-green-800 dark:text-green-200 font-semibold mb-3">セキュリティチェック完了</h4>
+		<div class="space-y-2 text-sm">
+			<div>
+				<span class="font-medium text-green-700 dark:text-green-300">ユーザー名:</span>
+				<span class="text-green-600 dark:text-green-400">{ result["username"] }</span>
+			</div>
+			<div>
+				<span class="font-medium text-green-700 dark:text-green-300">メール:</span>
+				<span class="text-green-600 dark:text-green-400">{ result["email"] }</span>
+			</div>
+			<div>
+				<span class="font-medium text-green-700 dark:text-green-300">サニタイズ済みコメント:</span>
+				<div class="text-green-600 dark:text-green-400 p-2 bg-green-100 dark:bg-green-800 rounded mt-1">
+					@templ.Raw(result["comment"])
+				</div>
+			</div>
+		</div>
+		<p class="text-xs text-green-600 dark:text-green-400 mt-3">
+			✓ CSRF トークン検証済み ✓ 入力検証完了 ✓ XSS対策済み
+		</p>
+	</div>
+}
+
+templ SearchResults(todos []db.TodoWithTags, query string) {
+	<div class="mt-4">
+		<h4 class="font-semibold text-gray-900 dark:text-white mb-3">
+			検索結果: "{ query }" ({ fmt.Sprintf("%d", len(todos)) }件)
+		</h4>
+		if len(todos) > 0 {
+			@TodoList(todos)
+		} else {
+			<p class="text-gray-500 dark:text-gray-400 text-center py-4">
+				検索結果が見つかりませんでした
+			</p>
+		}
+	</div>
+}
+
+templ EmptySearchResult() {
+	<div class="text-gray-500 dark:text-gray-400 text-center py-4">
+		検索クエリを入力してください
+	</div>
+}
+
+templ SearchPage(todos []db.TodoWithTags, query string) {
+	@Base("検索結果") {
+		<div class="max-w-4xl mx-auto">
+			<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">検索結果</h2>
+			@SearchResults(todos, query)
+		</div>
+	}
+}

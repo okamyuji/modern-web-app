@@ -1,0 +1,339 @@
+package templates
+
+import (
+	"chat-app/internal/models"
+	"fmt"
+)
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="ja" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+			<script src="https://unpkg.com/htmx.org@1.9.5/dist/ext/sse.js"></script>
+			<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					darkMode: 'class',
+					theme: {
+						extend: {
+							colors: {
+								primary: {
+									50: '#eff6ff',
+									500: '#3b82f6',
+									600: '#2563eb',
+									900: '#1e3a8a'
+								}
+							}
+						}
+					}
+				}
+			</script>
+		</head>
+		<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+			{ children... }
+		</body>
+	</html>
+}
+
+templ LoginPage() {
+	@Base("チャットルーム - ログイン") {
+		<div class="min-h-screen flex items-center justify-center">
+			<div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+				<h1 class="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">チャットルームに参加</h1>
+				
+				<form action="/chat" method="POST" class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							ユーザー名
+						</label>
+						<input 
+							type="text" 
+							name="username" 
+							required
+							maxlength="20"
+							pattern="[a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-colors"
+							placeholder="例: 山田太郎"
+						/>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							20文字以内で入力してください（英数字、ひらがな、カタカナ、漢字、アンダースコア）
+						</p>
+					</div>
+					
+					<button 
+						type="submit"
+						class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+					>
+						チャットルームに入る
+					</button>
+				</form>
+				
+				<div class="mt-6 text-center">
+					<p class="text-sm text-gray-600 dark:text-gray-400">
+						💡 リアルタイムでメッセージを送受信できます
+					</p>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ ChatRoom(username string, messages []models.Message, connectedUsers []string) {
+	@Base("チャットルーム") {
+		<div x-data="chatApp()" x-init="init()" class="flex flex-col h-screen max-w-6xl mx-auto bg-white dark:bg-gray-800 shadow-lg">
+			<!-- ヘッダー -->
+			<header class="bg-blue-600 dark:bg-blue-700 text-white p-4 shadow-lg">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center space-x-4">
+						<h1 class="text-xl font-bold">チャットルーム</h1>
+						<div class="text-sm opacity-90">
+							オンライン: <span x-text="connectedCount">{ fmt.Sprintf("%d", len(connectedUsers)) }</span> 人
+						</div>
+					</div>
+					<div class="flex items-center space-x-4">
+						<span class="text-sm">
+							<span x-text="username"></span>
+						</span>
+						<div 
+							class="w-3 h-3 rounded-full transition-colors"
+							:class="connected ? 'bg-green-400' : 'bg-red-400'"
+						></div>
+						<button 
+							@click="darkMode = !darkMode"
+							class="p-2 rounded-lg bg-blue-700 hover:bg-blue-800 transition-colors"
+						>
+							<span x-show="!darkMode">🌙</span>
+							<span x-show="darkMode">☀️</span>
+						</button>
+						<a href="/" class="text-sm underline hover:text-blue-200">
+							退出
+						</a>
+					</div>
+				</div>
+			</header>
+			
+			<div class="flex flex-1 overflow-hidden">
+				<!-- メッセージエリア -->
+				<main class="flex-1 flex flex-col">
+					<div 
+						id="messages"
+						class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 space-y-3"
+						hx-ext="sse"
+						sse-connect={ fmt.Sprintf("/chat/stream?username=%s", username) }
+						sse-swap="message"
+						hx-swap="beforeend"
+						hx-trigger="sse:message"
+					>
+						<!-- 既存メッセージ -->
+						for _, message := range messages {
+							@MessageComponent(message, username)
+						}
+					</div>
+					
+					<!-- 入力エリア -->
+					<footer class="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-4">
+						<form 
+							hx-post="/chat/send"
+							hx-trigger="submit"
+							hx-swap="none"
+							hx-on:htmx:after-request="if(event.detail.successful) { this.reset(); $refs.input.focus(); }"
+							class="flex gap-2"
+						>
+							<input type="hidden" name="username" value={ username }/>
+							
+							<input 
+								type="text"
+								name="content"
+								x-ref="input"
+								placeholder="メッセージを入力..."
+								required
+								maxlength="500"
+								@keydown.enter.meta="$el.form.requestSubmit()"
+								@input="updateCharCount()"
+								class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+								:disabled="!connected"
+							/>
+							
+							<button 
+								type="submit"
+								:disabled="!connected"
+								class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+							>
+								<span class="htmx-indicator">
+									<svg class="animate-spin h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								</span>
+								送信
+							</button>
+						</form>
+						
+						<!-- 文字数カウンター -->
+						<div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+							<span x-text="charCount">0</span> / 500
+						</div>
+					</footer>
+				</main>
+				
+				<!-- サイドバー（オンラインユーザー） -->
+				<aside class="w-64 bg-gray-100 dark:bg-gray-700 border-l dark:border-gray-600 p-4 hidden md:block">
+					<h3 class="font-semibold text-gray-900 dark:text-white mb-4">オンラインユーザー</h3>
+					<div id="user-list" class="space-y-2">
+						for _, user := range connectedUsers {
+							<div class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+								<div class="w-2 h-2 bg-green-400 rounded-full"></div>
+								<span>{ user }</span>
+							</div>
+						}
+					</div>
+				</aside>
+			</div>
+		</div>
+		
+		<!-- 通知 -->
+		<div 
+			id="notifications" 
+			class="fixed top-4 right-4 space-y-2 z-50"
+			x-data="notificationSystem()"
+		></div>
+		
+		<script>
+		function chatApp() {
+			return {
+				username: { fmt.Sprintf("'%s'", username) },
+				connected: false,
+				connectedCount: { fmt.Sprintf("%d", len(connectedUsers)) },
+				reconnectTimer: null,
+				charCount: 0,
+				
+				init() {
+					// フォーカスを入力欄に設定
+					this.$refs.input.focus();
+					
+					// SSE接続の監視
+					document.body.addEventListener('htmx:sseOpen', () => {
+						this.connected = true;
+						this.showNotification('チャットルームに接続しました', 'success');
+					});
+					
+					document.body.addEventListener('htmx:sseError', () => {
+						this.connected = false;
+						this.showNotification('接続が切断されました', 'error');
+						this.scheduleReconnect();
+					});
+					
+					document.body.addEventListener('htmx:sseClose', () => {
+						this.connected = false;
+						this.showNotification('接続が終了しました', 'warning');
+					});
+					
+					// メッセージ受信時の処理
+					document.body.addEventListener('htmx:sseMessage', (event) => {
+						// 自動スクロール
+						this.$nextTick(() => {
+							const messages = document.getElementById('messages');
+							messages.scrollTop = messages.scrollHeight;
+						});
+						
+						// 通知音（ページが非アクティブ時）
+						if (!document.hasFocus()) {
+							this.playNotificationSound();
+						}
+					});
+					
+					// フォーム送信エラーの処理
+					document.body.addEventListener('htmx:responseError', (event) => {
+						this.showNotification('メッセージの送信に失敗しました', 'error');
+					});
+					
+					// ページ離脱時の処理
+					window.addEventListener('beforeunload', () => {
+						// SSE接続のクリーンアップは自動的に行われる
+					});
+				},
+				
+				updateCharCount() {
+					this.charCount = this.$refs.input.value.length;
+				},
+				
+				scheduleReconnect() {
+					if (this.reconnectTimer) return;
+					
+					this.reconnectTimer = setTimeout(() => {
+						this.showNotification('再接続を試行しています...', 'info');
+						location.reload();
+					}, 5000);
+				},
+				
+				showNotification(message, type) {
+					const notification = document.createElement('div');
+					notification.className = 'notification p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full';
+					
+					const colors = {
+						success: 'bg-green-500 text-white',
+						error: 'bg-red-500 text-white',
+						warning: 'bg-yellow-500 text-white',
+						info: 'bg-blue-500 text-white'
+					};
+					
+					notification.className += ' ' + colors[type];
+					notification.textContent = message;
+					
+					document.getElementById('notifications').appendChild(notification);
+					
+					// アニメーション
+					setTimeout(() => {
+						notification.classList.remove('translate-x-full');
+					}, 10);
+					
+					// 自動削除
+					setTimeout(() => {
+						notification.classList.add('translate-x-full');
+						setTimeout(() => {
+							notification.remove();
+						}, 300);
+					}, 3000);
+				},
+				
+				playNotificationSound() {
+					// 簡単な通知音
+					const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmcfCSeG0fPTgjMGHm7A7+OZURE...');
+					audio.volume = 0.1;
+					audio.play().catch(() => {}); // ブラウザの自動再生ポリシーを考慮
+				}
+			}
+		}
+		
+		function notificationSystem() {
+			return {
+				notifications: []
+			}
+		}
+		</script>
+	}
+}
+
+templ MessageComponent(message models.Message, currentUser string) {
+	<div class={ "flex", templ.KV("justify-center", message.Type == "system"), templ.KV("justify-end", message.Type != "system" && message.Username == currentUser), templ.KV("justify-start", message.Type != "system" && message.Username != currentUser) }>
+		if message.Type == "system" {
+			<div class="text-sm text-gray-500 dark:text-gray-400 italic bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full">
+				{ message.Content }
+			</div>
+		} else {
+			<div class="max-w-xs lg:max-w-md">
+				<div class={ "text-xs text-gray-500 dark:text-gray-400 mb-1", templ.KV("text-right", message.Username == currentUser) }>
+					{ message.Username } • { message.CreatedAt.Format("15:04") }
+				</div>
+				<div class={ "px-4 py-2 rounded-lg break-words", templ.KV("bg-blue-600 text-white", message.Username == currentUser), templ.KV("bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 text-gray-900 dark:text-white", message.Username != currentUser) }>
+					{ message.Content }
+				</div>
+			</div>
+		}
+	</div>
+}

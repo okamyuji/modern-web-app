@@ -1,0 +1,289 @@
+package templates
+
+templ TodoApp() {
+	@Base("TODOアプリ - Alpine.js デモ") {
+		<div class="max-w-2xl mx-auto">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">Alpine.js TODOアプリ</h2>
+				<a href="/" class="text-blue-500 hover:underline mb-4 inline-block">← ホームに戻る</a>
+				
+				<div x-data="todoComponent()" class="space-y-6">
+					<!-- 統計情報 -->
+					<div class="grid grid-cols-3 gap-4 text-center">
+						<div class="bg-blue-50 p-4 rounded">
+							<div class="text-2xl font-bold text-blue-600" x-text="todos.length"></div>
+							<div class="text-sm text-blue-600">総タスク数</div>
+						</div>
+						<div class="bg-green-50 p-4 rounded">
+							<div class="text-2xl font-bold text-green-600" x-text="completedCount"></div>
+							<div class="text-sm text-green-600">完了済み</div>
+						</div>
+						<div class="bg-orange-50 p-4 rounded">
+							<div class="text-2xl font-bold text-orange-600" x-text="pendingCount"></div>
+							<div class="text-sm text-orange-600">未完了</div>
+						</div>
+					</div>
+
+					<!-- 新しいタスクの追加 -->
+					<form @submit.prevent="addTodo" class="space-y-4">
+						<div class="flex gap-2">
+							<input 
+								type="text" 
+								x-model="newTodo"
+								@keyup.enter="addTodo"
+								class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+								placeholder="新しいタスクを入力..."
+							>
+							<button 
+								type="submit"
+								:disabled="!newTodo.trim()"
+								class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								追加
+							</button>
+						</div>
+					</form>
+
+					<!-- フィルター -->
+					<div class="flex gap-2 flex-wrap">
+						<template x-for="filter in filters">
+							<button 
+								@click="currentFilter = filter.value"
+								:class="{
+									'bg-blue-500 text-white': currentFilter === filter.value,
+									'bg-gray-200 text-gray-700 hover:bg-gray-300': currentFilter !== filter.value
+								}"
+								class="px-4 py-2 rounded text-sm font-medium transition-colors"
+								x-text="filter.label"
+							></button>
+						</template>
+					</div>
+
+					<!-- バルクアクション -->
+					<div class="flex gap-2 flex-wrap" x-show="todos.length > 0">
+						<button 
+							@click="markAllComplete"
+							class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+						>
+							すべて完了
+						</button>
+						<button 
+							@click="markAllIncomplete"
+							class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm"
+						>
+							すべて未完了
+						</button>
+						<button 
+							@click="clearCompleted"
+							x-show="completedCount > 0"
+							class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+						>
+							完了済みを削除
+						</button>
+					</div>
+
+					<!-- TODOリスト -->
+					<div class="space-y-2">
+						<template x-for="todo in filteredTodos" :key="todo.id">
+							<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+								<input 
+									type="checkbox"
+									:checked="todo.completed"
+									@change="toggleTodo(todo.id)"
+									class="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+								>
+								<div class="flex-1">
+									<div x-show="!todo.editing">
+										<span 
+											:class="{ 'line-through text-gray-500': todo.completed }"
+											class="text-gray-900"
+											x-text="todo.text"
+										></span>
+										<div class="text-xs text-gray-500 mt-1">
+											作成: <span x-text="formatDate(todo.createdAt)"></span>
+											<span x-show="todo.completed" class="ml-2">
+												完了: <span x-text="formatDate(todo.completedAt)"></span>
+											</span>
+										</div>
+									</div>
+									<div x-show="todo.editing">
+										<input 
+											type="text"
+											x-model="todo.text"
+											@keyup.enter="saveEdit(todo.id)"
+											@keyup.escape="cancelEdit(todo.id)"
+											@blur="saveEdit(todo.id)"
+											class="w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+										>
+										<div class="text-xs text-gray-500 mt-1">
+											Enterで保存、Escapeでキャンセル
+										</div>
+									</div>
+								</div>
+								<div class="flex gap-1">
+									<button 
+										@click="editTodo(todo.id)"
+										x-show="!todo.editing && !todo.completed"
+										class="px-2 py-1 text-blue-600 hover:bg-blue-100 rounded text-sm"
+										title="編集"
+									>
+										✏️
+									</button>
+									<button 
+										@click="deleteTodo(todo.id)"
+										class="px-2 py-1 text-red-600 hover:bg-red-100 rounded text-sm"
+										title="削除"
+									>
+										🗑️
+									</button>
+								</div>
+							</div>
+						</template>
+						
+						<div x-show="filteredTodos.length === 0" class="text-center py-8 text-gray-500">
+							<div x-show="todos.length === 0">
+								<p>まだタスクがありません。</p>
+								<p class="text-sm">上のフォームから新しいタスクを追加してください。</p>
+							</div>
+							<div x-show="todos.length > 0 && filteredTodos.length === 0">
+								<p>このフィルターに該当するタスクがありません。</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function todoComponent() {
+				return {
+					newTodo: '',
+					currentFilter: 'all',
+					todos: [
+						{
+							id: 1,
+							text: 'Alpine.js を学習する',
+							completed: false,
+							editing: false,
+							createdAt: new Date(),
+							completedAt: null
+						},
+						{
+							id: 2,
+							text: 'HTMX と統合する',
+							completed: true,
+							editing: false,
+							createdAt: new Date(Date.now() - 86400000),
+							completedAt: new Date()
+						}
+					],
+					filters: [
+						{ label: 'すべて', value: 'all' },
+						{ label: '未完了', value: 'pending' },
+						{ label: '完了済み', value: 'completed' }
+					],
+
+					get filteredTodos() {
+						switch(this.currentFilter) {
+							case 'pending':
+								return this.todos.filter(todo => !todo.completed);
+							case 'completed':
+								return this.todos.filter(todo => todo.completed);
+							default:
+								return this.todos;
+						}
+					},
+
+					get completedCount() {
+						return this.todos.filter(todo => todo.completed).length;
+					},
+
+					get pendingCount() {
+						return this.todos.filter(todo => !todo.completed).length;
+					},
+
+					addTodo() {
+						if (this.newTodo.trim()) {
+							this.todos.push({
+								id: Date.now(),
+								text: this.newTodo.trim(),
+								completed: false,
+								editing: false,
+								createdAt: new Date(),
+								completedAt: null
+							});
+							this.newTodo = '';
+						}
+					},
+
+					toggleTodo(id) {
+						const todo = this.todos.find(t => t.id === id);
+						if (todo) {
+							todo.completed = !todo.completed;
+							todo.completedAt = todo.completed ? new Date() : null;
+						}
+					},
+
+					deleteTodo(id) {
+						this.todos = this.todos.filter(t => t.id !== id);
+					},
+
+					editTodo(id) {
+						const todo = this.todos.find(t => t.id === id);
+						if (todo) {
+							todo.editing = true;
+							todo.originalText = todo.text;
+						}
+					},
+
+					saveEdit(id) {
+						const todo = this.todos.find(t => t.id === id);
+						if (todo) {
+							todo.editing = false;
+							delete todo.originalText;
+						}
+					},
+
+					cancelEdit(id) {
+						const todo = this.todos.find(t => t.id === id);
+						if (todo && todo.originalText) {
+							todo.text = todo.originalText;
+							todo.editing = false;
+							delete todo.originalText;
+						}
+					},
+
+					markAllComplete() {
+						this.todos.forEach(todo => {
+							if (!todo.completed) {
+								todo.completed = true;
+								todo.completedAt = new Date();
+							}
+						});
+					},
+
+					markAllIncomplete() {
+						this.todos.forEach(todo => {
+							todo.completed = false;
+							todo.completedAt = null;
+						});
+					},
+
+					clearCompleted() {
+						this.todos = this.todos.filter(todo => !todo.completed);
+					},
+
+					formatDate(date) {
+						if (!date) return '';
+						return new Date(date).toLocaleString('ja-JP', {
+							month: 'short',
+							day: 'numeric',
+							hour: '2-digit',
+							minute: '2-digit'
+						});
+					}
+				}
+			}
+		</script>
+	}
+}
