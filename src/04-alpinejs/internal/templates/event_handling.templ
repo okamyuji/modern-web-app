@@ -1,0 +1,182 @@
+package templates
+
+templ EventHandling() {
+	@Base("Alpine.js デモ - イベント処理") {
+		<div class="max-w-4xl mx-auto p-6">
+			<h1 class="text-3xl font-bold mb-6">Alpine.js イベント処理デモ</h1>
+			
+			<!-- ナビゲーション -->
+			<div class="mb-8">
+				<a href="/" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">← ホームに戻る</a>
+			</div>
+
+			<div class="grid gap-8">
+				<!-- マウスイベント -->
+				<div class="bg-white p-6 rounded-lg shadow-md" x-data="{ mouseEvents: '', clickCount: 0 }">
+					<h2 class="text-2xl font-bold mb-4">マウスイベント</h2>
+					<div class="space-y-4">
+						<div class="border-2 border-dashed border-gray-300 p-4 rounded"
+							@mouseenter="mouseEvents = 'マウス入った'"
+							@mouseleave="mouseEvents = 'マウス出た'"
+							@click="clickCount++">
+							<p class="text-center">このエリアにマウスを置いたりクリックしてください</p>
+							<p class="text-sm text-gray-600 mt-2">イベント: <span x-text="mouseEvents"></span></p>
+							<p class="text-sm text-gray-600">クリック回数: <span x-text="clickCount"></span></p>
+						</div>
+						<button @click="clickCount = 0" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+							カウンターリセット
+						</button>
+					</div>
+				</div>
+
+				<!-- キーボードイベント -->
+				<div class="bg-white p-6 rounded-lg shadow-md" x-data="{ keyPressed: '', inputValue: '', specialKeys: [] }">
+					<h2 class="text-2xl font-bold mb-4">キーボードイベント</h2>
+					<div class="space-y-4">
+						<div>
+							<label class="block text-sm font-medium mb-2">テキスト入力 (リアルタイム更新)</label>
+							<input type="text" 
+								x-model="inputValue"
+								@keydown="keyPressed = $event.key"
+								@keydown.enter="specialKeys.push('Enter:' + inputValue)"
+								@keydown.escape="inputValue = ''; specialKeys.push('Escape')"
+								@keydown.ctrl.s.prevent="specialKeys.push('Ctrl+S:' + inputValue)"
+								class="w-full border border-gray-300 rounded px-3 py-2">
+							<p class="text-sm text-gray-600 mt-2">入力値: "<span x-text="inputValue"></span>"</p>
+							<p class="text-sm text-gray-600">最後に押されたキー: <span x-text="keyPressed"></span></p>
+						</div>
+						<div x-show="specialKeys.length > 0">
+							<h3 class="font-medium">特殊キー履歴:</h3>
+							<ul class="text-sm text-gray-600">
+								<template x-for="key in specialKeys" :key="key">
+									<li x-text="key"></li>
+								</template>
+							</ul>
+							<button @click="specialKeys = []" class="mt-2 bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+								履歴クリア
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- フォームイベント -->
+				<div class="bg-white p-6 rounded-lg shadow-md" x-data="{ formData: { name: '', email: '', message: '' }, submissions: [] }">
+					<h2 class="text-2xl font-bold mb-4">フォームイベント</h2>
+					<form @submit.prevent="submissions.push({...formData, timestamp: new Date().toLocaleString()}); formData = { name: '', email: '', message: '' }" 
+						class="space-y-4">
+						<div>
+							<label class="block text-sm font-medium mb-1">名前</label>
+							<input type="text" x-model="formData.name" required
+								class="w-full border border-gray-300 rounded px-3 py-2">
+						</div>
+						<div>
+							<label class="block text-sm font-medium mb-1">メール</label>
+							<input type="email" x-model="formData.email" required
+								@input.debounce.500ms="console.log('Email validation can go here')"
+								class="w-full border border-gray-300 rounded px-3 py-2">
+						</div>
+						<div>
+							<label class="block text-sm font-medium mb-1">メッセージ</label>
+							<textarea x-model="formData.message" required rows="3"
+								class="w-full border border-gray-300 rounded px-3 py-2"></textarea>
+						</div>
+						<button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+							送信
+						</button>
+					</form>
+
+					<!-- 送信履歴 -->
+					<div x-show="submissions.length > 0" class="mt-6">
+						<h3 class="font-medium mb-2">送信履歴:</h3>
+						<div class="space-y-2">
+							<template x-for="(submission, index) in submissions" :key="index">
+								<div class="bg-gray-50 p-3 rounded text-sm">
+									<p><strong x-text="submission.name"></strong> (<span x-text="submission.email"></span>)</p>
+									<p x-text="submission.message"></p>
+									<p class="text-gray-500 text-xs" x-text="submission.timestamp"></p>
+								</div>
+							</template>
+						</div>
+						<button @click="submissions = []" class="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+							履歴削除
+						</button>
+					</div>
+				</div>
+
+				<!-- カスタムイベント -->
+				<div class="bg-white p-6 rounded-lg shadow-md" x-data="{ notifications: [] }" 
+					@custom-notify.window="notifications.push($event.detail); setTimeout(() => notifications.shift(), 3000)">
+					<h2 class="text-2xl font-bold mb-4">カスタムイベント</h2>
+					<div class="space-y-4">
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<button @click="$dispatch('custom-notify', { message: '成功メッセージ', type: 'success' })"
+								class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+								成功通知
+							</button>
+							<button @click="$dispatch('custom-notify', { message: '警告メッセージ', type: 'warning' })"
+								class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
+								警告通知
+							</button>
+							<button @click="$dispatch('custom-notify', { message: 'エラーメッセージ', type: 'error' })"
+								class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+								エラー通知
+							</button>
+						</div>
+						
+						<!-- 通知表示エリア -->
+						<div class="fixed top-4 right-4 space-y-2 z-50">
+							<template x-for="(notification, index) in notifications" :key="index">
+								<div class="px-4 py-2 rounded shadow-lg text-white"
+									:class="{
+										'bg-green-500': notification.type === 'success',
+										'bg-yellow-500': notification.type === 'warning',
+										'bg-red-500': notification.type === 'error'
+									}"
+									x-transition:enter="transition ease-out duration-300"
+									x-transition:enter-start="opacity-0 transform translate-x-full"
+									x-transition:enter-end="opacity-100 transform translate-x-0"
+									x-transition:leave="transition ease-in duration-300"
+									x-transition:leave-start="opacity-100 transform translate-x-0"
+									x-transition:leave-end="opacity-0 transform translate-x-full">
+									<p x-text="notification.message"></p>
+								</div>
+							</template>
+						</div>
+					</div>
+				</div>
+
+				<!-- ドラッグ&ドロップ -->
+				<div class="bg-white p-6 rounded-lg shadow-md" x-data="{ draggedItem: null, items: ['アイテム1', 'アイテム2', 'アイテム3'], dragOver: false }">
+					<h2 class="text-2xl font-bold mb-4">ドラッグ&ドロップ</h2>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<h3 class="font-medium mb-2">ドラッグ可能なアイテム</h3>
+							<div class="space-y-2">
+								<template x-for="(item, index) in items" :key="index">
+									<div class="bg-blue-100 p-3 rounded cursor-move border-2 border-transparent"
+										draggable="true"
+										@dragstart="draggedItem = item; $el.classList.add('opacity-50')"
+										@dragend="$el.classList.remove('opacity-50')"
+										:class="{ 'border-blue-500': draggedItem === item }">
+										<span x-text="item"></span>
+									</div>
+								</template>
+							</div>
+						</div>
+						<div>
+							<h3 class="font-medium mb-2">ドロップエリア</h3>
+							<div class="border-2 border-dashed border-gray-300 p-8 rounded text-center min-h-32"
+								:class="{ 'border-green-500 bg-green-50': dragOver }"
+								@dragover.prevent="dragOver = true"
+								@dragleave="dragOver = false"
+								@drop.prevent="dragOver = false; if (draggedItem) { items = items.filter(i => i !== draggedItem); draggedItem = null; }">
+								<p class="text-gray-600" x-show="!dragOver">アイテムをここにドロップ</p>
+								<p class="text-green-600" x-show="dragOver">ここにドロップ！</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

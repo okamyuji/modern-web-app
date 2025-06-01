@@ -1,0 +1,244 @@
+package templates
+
+templ GlobalState() {
+	@Base("Alpine.js デモ - グローバル状態") {
+		<div class="max-w-4xl mx-auto p-6">
+			<h1 class="text-3xl font-bold mb-6">Alpine.js グローバル状態デモ</h1>
+			
+			<!-- ナビゲーション -->
+			<div class="mb-8">
+				<a href="/" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">← ホームに戻る</a>
+			</div>
+
+			<!-- グローバルストア設定 -->
+			<script>
+				document.addEventListener('alpine:init', () => {
+					Alpine.store('theme', {
+						current: 'light',
+						toggle() {
+							this.current = this.current === 'light' ? 'dark' : 'light';
+						}
+					});
+
+					Alpine.store('user', {
+						name: 'ユーザー',
+						email: 'user@example.com',
+						preferences: {
+							language: 'ja',
+							notifications: true
+						},
+						setName(name) {
+							this.name = name;
+						},
+						setEmail(email) {
+							this.email = email;
+						},
+						toggleNotifications() {
+							this.preferences.notifications = !this.preferences.notifications;
+						}
+					});
+
+					Alpine.store('cart', {
+						items: [],
+						add(item) {
+							const existing = this.items.find(i => i.id === item.id);
+							if (existing) {
+								existing.quantity++;
+							} else {
+								this.items.push({...item, quantity: 1});
+							}
+						},
+						remove(id) {
+							this.items = this.items.filter(i => i.id !== id);
+						},
+						get total() {
+							return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+						},
+						get count() {
+							return this.items.reduce((sum, item) => sum + item.quantity, 0);
+						}
+					});
+				});
+			</script>
+
+			<div class="grid gap-8" :class="$store.theme.current === 'dark' ? 'text-white' : 'text-gray-900'">
+				<!-- テーマ切り替え -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					:class="$store.theme.current === 'dark' ? 'bg-gray-800' : 'bg-white'">
+					<h2 class="text-2xl font-bold mb-4">テーマ設定</h2>
+					<div class="space-y-4">
+						<div class="flex items-center justify-between">
+							<span>現在のテーマ: <span x-text="$store.theme.current"></span></span>
+							<button @click="$store.theme.toggle()" 
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+								テーマ切り替え
+							</button>
+						</div>
+						<p class="text-sm text-gray-600" 
+							:class="$store.theme.current === 'dark' ? 'text-gray-300' : 'text-gray-600'">
+							このテーマ設定は全てのコンポーネントで共有されます
+						</p>
+					</div>
+				</div>
+
+				<!-- ユーザー情報管理 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					:class="$store.theme.current === 'dark' ? 'bg-gray-800' : 'bg-white'"
+					x-data="{ editing: false }">
+					<h2 class="text-2xl font-bold mb-4">ユーザー情報</h2>
+					<div class="space-y-4">
+						<div x-show="!editing">
+							<div class="space-y-2">
+								<p><strong>名前:</strong> <span x-text="$store.user.name"></span></p>
+								<p><strong>メール:</strong> <span x-text="$store.user.email"></span></p>
+								<p><strong>言語:</strong> <span x-text="$store.user.preferences.language"></span></p>
+								<p><strong>通知:</strong> 
+									<span x-text="$store.user.preferences.notifications ? '有効' : '無効'"></span>
+								</p>
+							</div>
+							<button @click="editing = true" 
+								class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+								編集
+							</button>
+						</div>
+
+						<div x-show="editing" x-data="{ tempName: $store.user.name, tempEmail: $store.user.email }">
+							<div class="space-y-4">
+								<div>
+									<label class="block text-sm font-medium mb-1">名前</label>
+									<input type="text" x-model="tempName" 
+										class="w-full border border-gray-300 rounded px-3 py-2">
+								</div>
+								<div>
+									<label class="block text-sm font-medium mb-1">メール</label>
+									<input type="email" x-model="tempEmail" 
+										class="w-full border border-gray-300 rounded px-3 py-2">
+								</div>
+								<div class="flex items-center space-x-2">
+									<input type="checkbox" 
+										:checked="$store.user.preferences.notifications"
+										@change="$store.user.toggleNotifications()"
+										class="rounded">
+									<label>通知を受け取る</label>
+								</div>
+								<div class="flex space-x-2">
+									<button @click="$store.user.setName(tempName); $store.user.setEmail(tempEmail); editing = false"
+										class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+										保存
+									</button>
+									<button @click="editing = false; tempName = $store.user.name; tempEmail = $store.user.email"
+										class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+										キャンセル
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ショッピングカート -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					:class="$store.theme.current === 'dark' ? 'bg-gray-800' : 'bg-white'"
+					x-data="{ 
+						products: [
+							{ id: 1, name: 'ノートパソコン', price: 80000 },
+							{ id: 2, name: 'マウス', price: 3000 },
+							{ id: 3, name: 'キーボード', price: 8000 },
+							{ id: 4, name: 'モニター', price: 25000 }
+						]
+					}">
+					<h2 class="text-2xl font-bold mb-4">ショッピングカート</h2>
+					
+					<!-- 商品一覧 -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<h3 class="font-medium mb-4">商品一覧</h3>
+							<div class="space-y-2">
+								<template x-for="product in products" :key="product.id">
+									<div class="flex items-center justify-between p-3 border rounded">
+										<div>
+											<span x-text="product.name"></span>
+											<span class="text-gray-500 text-sm">
+												¥<span x-text="product.price.toLocaleString()"></span>
+											</span>
+										</div>
+										<button @click="$store.cart.add(product)"
+											class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+											追加
+										</button>
+									</div>
+								</template>
+							</div>
+						</div>
+
+						<!-- カート内容 -->
+						<div>
+							<h3 class="font-medium mb-4">
+								カート (<span x-text="$store.cart.count"></span>個)
+							</h3>
+							<div class="space-y-2 mb-4">
+								<template x-for="item in $store.cart.items" :key="item.id">
+									<div class="flex items-center justify-between p-3 border rounded">
+										<div>
+											<span x-text="item.name"></span>
+											<span class="text-gray-500 text-sm">
+												x<span x-text="item.quantity"></span>
+											</span>
+										</div>
+										<div class="flex items-center space-x-2">
+											<span class="text-sm">
+												¥<span x-text="(item.price * item.quantity).toLocaleString()"></span>
+											</span>
+											<button @click="$store.cart.remove(item.id)"
+												class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">
+												削除
+											</button>
+										</div>
+									</div>
+								</template>
+								<div x-show="$store.cart.items.length === 0" 
+									class="text-gray-500 text-center py-4">
+									カートは空です
+								</div>
+							</div>
+							<div class="border-t pt-4">
+								<div class="flex justify-between font-bold">
+									<span>合計:</span>
+									<span>¥<span x-text="$store.cart.total.toLocaleString()"></span></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 状態同期の確認 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					:class="$store.theme.current === 'dark' ? 'bg-gray-800' : 'bg-white'">
+					<h2 class="text-2xl font-bold mb-4">状態同期確認</h2>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div class="p-4 border rounded">
+							<h3 class="font-medium mb-2">テーマ</h3>
+							<p x-text="$store.theme.current"></p>
+						</div>
+						<div class="p-4 border rounded">
+							<h3 class="font-medium mb-2">ユーザー</h3>
+							<p x-text="$store.user.name"></p>
+							<p class="text-sm text-gray-500" x-text="$store.user.email"></p>
+						</div>
+						<div class="p-4 border rounded">
+							<h3 class="font-medium mb-2">カート</h3>
+							<p><span x-text="$store.cart.count"></span>個の商品</p>
+							<p class="text-sm text-gray-500">
+								¥<span x-text="$store.cart.total.toLocaleString()"></span>
+							</p>
+						</div>
+					</div>
+					<p class="mt-4 text-sm text-gray-600"
+						:class="$store.theme.current === 'dark' ? 'text-gray-300' : 'text-gray-600'">
+						これらの値は全てグローバルストアから取得され、どのコンポーネントからでも更新可能です。
+					</p>
+				</div>
+			</div>
+		</div>
+	}
+}

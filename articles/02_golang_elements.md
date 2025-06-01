@@ -1,11 +1,3 @@
----
-title: "第2章 Golangの基礎と実践パターン"
-emoji: "😸" 
-type: "tech" 
-topics: ["golang","go","alpinejs","htmx"] 
-published: false
----
-
 # 第2章 Golangの基礎と実践パターン
 
 ## 2.1 Goの特徴とWeb開発における利点

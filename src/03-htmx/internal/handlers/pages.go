@@ -37,3 +37,35 @@ func (h *PageHandler) Triggers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// Targets serves the targets demo page
+func (h *PageHandler) Targets(w http.ResponseWriter, r *http.Request) {
+	err := templates.Targets().Render(context.Background(), w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Indicators serves the indicators demo page
+func (h *PageHandler) Indicators(w http.ResponseWriter, r *http.Request) {
+	err := templates.Indicators().Render(context.Background(), w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Forms serves the forms demo page
+func (h *PageHandler) Forms(w http.ResponseWriter, r *http.Request) {
+	err := templates.Forms().Render(context.Background(), w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Progressive serves the progressive demo page
+func (h *PageHandler) Progressive(w http.ResponseWriter, r *http.Request) {
+	err := templates.Progressive().Render(context.Background(), w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}

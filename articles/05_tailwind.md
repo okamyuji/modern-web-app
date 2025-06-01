@@ -1,11 +1,3 @@
----
-title: "第5章 Tailwind CSSによる効率的なスタイリング"
-emoji: "😸" 
-type: "tech" 
-topics: ["golang","go","alpinejs","htmx"] 
-published: false
----
-
 # 第5章 Tailwind CSSによる効率的なスタイリング
 
 ## 1. Tailwind CSSの本質的な理解

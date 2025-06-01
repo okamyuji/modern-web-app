@@ -16,7 +16,25 @@ type ValidationError struct {
 }
 
 func (e ValidationError) Error() string {
-	return "validation error on field " + e.Field + ": " + e.Message
+	if e.Field != "" {
+		return "validation error on field " + e.Field + ": " + e.Message
+	}
+	return "validation error: " + e.Message
+}
+
+// NewValidationError creates a new validation error
+func NewValidationError(message string) *ValidationError {
+	return &ValidationError{
+		Message: message,
+	}
+}
+
+// NewFieldValidationError creates a new field validation error
+func NewFieldValidationError(field, message string) *ValidationError {
+	return &ValidationError{
+		Field:   field,
+		Message: message,
+	}
 }
 
 // NotFoundError represents a not found error

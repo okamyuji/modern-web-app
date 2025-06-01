@@ -1,0 +1,300 @@
+package templates
+
+templ Progressive() {
+	@Base("HTMX デモ - プログレッシブエンハンスメント") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">プログレッシブエンハンスメントデモ</h2>
+				<p class="mb-4 text-gray-600">
+					HTMXを使用したプログレッシブエンハンスメント、無限スクロール、リアルタイム更新の方法を学びます。
+				</p>
+				
+				<!-- 無限スクロール -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">1. 無限スクロール</h3>
+					<div class="border border-gray-300 rounded p-4 h-64 overflow-y-auto" id="infinite-scroll-container">
+						<div id="infinite-content">
+							<div class="space-y-2">
+								<div class="p-3 bg-blue-50 border border-blue-200 rounded">アイテム 1</div>
+								<div class="p-3 bg-blue-50 border border-blue-200 rounded">アイテム 2</div>
+								<div class="p-3 bg-blue-50 border border-blue-200 rounded">アイテム 3</div>
+								<div class="p-3 bg-blue-50 border border-blue-200 rounded">アイテム 4</div>
+								<div class="p-3 bg-blue-50 border border-blue-200 rounded">アイテム 5</div>
+							</div>
+							<div 
+								hx-get="/api/load-more?page=2"
+								hx-target="this"
+								hx-swap="outerHTML"
+								hx-trigger="revealed"
+								class="text-center py-4">
+								<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+								<p class="text-sm text-gray-600 mt-2">さらに読み込み中...</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- リアルタイム更新 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">2. リアルタイム更新</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<h4 class="font-medium mb-2">ライブカウンター</h4>
+							<div 
+								hx-get="/api/live-counter"
+								hx-trigger="every 2s"
+								hx-target="this"
+								class="p-4 bg-green-50 border border-green-200 rounded text-center">
+								<div class="text-2xl font-bold text-green-600">0</div>
+								<p class="text-sm text-green-600">リアルタイムカウンター</p>
+							</div>
+						</div>
+						<div>
+							<h4 class="font-medium mb-2">ライブ統計</h4>
+							<div 
+								hx-get="/api/live-stats"
+								hx-trigger="every 3s"
+								hx-target="this"
+								class="p-4 bg-purple-50 border border-purple-200 rounded">
+								<div class="grid grid-cols-2 gap-2 text-center">
+									<div>
+										<div class="text-lg font-bold text-purple-600">--</div>
+										<p class="text-xs text-purple-600">ユーザー</p>
+									</div>
+									<div>
+										<div class="text-lg font-bold text-purple-600">--</div>
+										<p class="text-xs text-purple-600">セッション</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 段階的読み込み -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">3. 段階的読み込み</h3>
+					<div class="space-y-4">
+						<button 
+							hx-get="/api/progressive-load?step=1"
+							hx-target="#progressive-content"
+							hx-swap="innerHTML"
+							class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
+							段階的読み込みを開始
+						</button>
+						<div id="progressive-content" class="border border-gray-300 rounded p-4 min-h-[200px]">
+							<p class="text-gray-500">「段階的読み込みを開始」ボタンをクリックしてください</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 遅延読み込み -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">4. 遅延読み込み (Lazy Loading)</h3>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div class="border border-gray-300 rounded p-4">
+							<h4 class="font-medium mb-2">画像コンテンツ</h4>
+							<div 
+								hx-get="/api/lazy-content?type=image"
+								hx-trigger="revealed"
+								hx-target="this"
+								class="h-32 bg-gray-100 flex items-center justify-center">
+								<div class="text-center">
+									<div class="animate-pulse bg-gray-300 h-4 w-16 mx-auto mb-2"></div>
+									<p class="text-xs text-gray-500">読み込み中...</p>
+								</div>
+							</div>
+						</div>
+						<div class="border border-gray-300 rounded p-4">
+							<h4 class="font-medium mb-2">チャートデータ</h4>
+							<div 
+								hx-get="/api/lazy-content?type=chart"
+								hx-trigger="revealed"
+								hx-target="this"
+								class="h-32 bg-gray-100 flex items-center justify-center">
+								<div class="text-center">
+									<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto"></div>
+									<p class="text-xs text-gray-500 mt-2">チャート生成中...</p>
+								</div>
+							</div>
+						</div>
+						<div class="border border-gray-300 rounded p-4">
+							<h4 class="font-medium mb-2">重いコンテンツ</h4>
+							<div 
+								hx-get="/api/lazy-content?type=heavy"
+								hx-trigger="revealed"
+								hx-target="this"
+								class="h-32 bg-gray-100 flex items-center justify-center">
+								<div class="text-center">
+									<div class="animate-bounce bg-gray-400 rounded-full h-2 w-2 mx-auto"></div>
+									<p class="text-xs text-gray-500 mt-2">処理中...</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- オートコンプリート -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">5. オートコンプリート検索</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">都市名検索</label>
+							<input 
+								type="text" 
+								name="city"
+								hx-get="/api/autocomplete"
+								hx-target="#autocomplete-results"
+								hx-trigger="keyup changed delay:300ms"
+								placeholder="都市名を入力してください..."
+								class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+							<div id="autocomplete-results" class="mt-2">
+								<!-- オートコンプリート結果がここに表示されます -->
+							</div>
+						</div>
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">選択された都市</label>
+							<div id="selected-city" class="p-3 border border-gray-300 rounded bg-gray-50">
+								<p class="text-gray-500">都市を選択してください</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ドラッグ&ドロップ -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">6. ドラッグ&ドロップ並び替え</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<h4 class="font-medium mb-2">タスクリスト</h4>
+							<div id="sortable-list" class="space-y-2">
+								<div 
+									draggable="true" 
+									class="p-3 bg-white border border-gray-300 rounded cursor-move hover:bg-gray-50"
+									data-id="1">
+									📝 タスク 1: プロジェクト計画
+								</div>
+								<div 
+									draggable="true" 
+									class="p-3 bg-white border border-gray-300 rounded cursor-move hover:bg-gray-50"
+									data-id="2">
+									💻 タスク 2: 開発作業
+								</div>
+								<div 
+									draggable="true" 
+									class="p-3 bg-white border border-gray-300 rounded cursor-move hover:bg-gray-50"
+									data-id="3">
+									🧪 タスク 3: テスト実行
+								</div>
+								<div 
+									draggable="true" 
+									class="p-3 bg-white border border-gray-300 rounded cursor-move hover:bg-gray-50"
+									data-id="4">
+									🚀 タスク 4: デプロイ
+								</div>
+							</div>
+							<button 
+								hx-post="/api/save-order"
+								hx-target="#order-result"
+								hx-include="#sortable-list"
+								class="mt-4 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+								順序を保存
+							</button>
+						</div>
+						<div>
+							<h4 class="font-medium mb-2">保存結果</h4>
+							<div id="order-result" class="p-4 border border-gray-300 rounded bg-gray-50">
+								<p class="text-gray-500">タスクを並び替えて「順序を保存」をクリックしてください</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- WebSocket風リアルタイム通信 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">7. リアルタイム通知</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<button 
+								hx-post="/api/start-notifications"
+								hx-target="#notification-status"
+								class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded mr-2">
+								通知開始
+							</button>
+							<button 
+								hx-post="/api/stop-notifications"
+								hx-target="#notification-status"
+								class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+								通知停止
+							</button>
+							<div id="notification-status" class="mt-4 p-3 border border-gray-300 rounded">
+								<p class="text-gray-500">通知システムは停止中です</p>
+							</div>
+						</div>
+						<div>
+							<h4 class="font-medium mb-2">通知ログ</h4>
+							<div 
+								id="notification-log"
+								hx-get="/api/notification-updates"
+								hx-trigger="every 1s"
+								class="h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
+								<p class="text-xs text-gray-500">通知ログがここに表示されます</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ナビゲーション -->
+				<div class="flex justify-between">
+					<a href="/forms" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						← フォーム処理
+					</a>
+					<a href="/" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+						ホームに戻る
+					</a>
+					<a href="/basic-requests" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						基本リクエスト →
+					</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- ドラッグ&ドロップ用JavaScript -->
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				const sortableList = document.getElementById('sortable-list');
+				if (sortableList) {
+					let draggedElement = null;
+
+					sortableList.addEventListener('dragstart', function(e) {
+						draggedElement = e.target;
+						e.target.style.opacity = '0.5';
+					});
+
+					sortableList.addEventListener('dragend', function(e) {
+						e.target.style.opacity = '';
+						draggedElement = null;
+					});
+
+					sortableList.addEventListener('dragover', function(e) {
+						e.preventDefault();
+					});
+
+					sortableList.addEventListener('drop', function(e) {
+						e.preventDefault();
+						if (draggedElement && e.target !== draggedElement && e.target.draggable) {
+							const rect = e.target.getBoundingClientRect();
+							const midpoint = rect.top + rect.height / 2;
+							
+							if (e.clientY < midpoint) {
+								sortableList.insertBefore(draggedElement, e.target);
+							} else {
+								sortableList.insertBefore(draggedElement, e.target.nextSibling);
+							}
+						}
+					});
+				}
+			});
+		</script>
+	}
+}

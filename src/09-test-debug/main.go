@@ -58,7 +58,7 @@ func main() {
 	}
 
 	// リポジトリとハンドラーの初期化
-	todoRepo := models.NewTodoRepository(database.DB)
+	todoRepo := models.NewTodoRepositoryWithDriver(database.DB, database.GetDriver())
 	todoHandler := handlers.NewTodoHandler(todoRepo, appLogger)
 
 	// ルーター設定

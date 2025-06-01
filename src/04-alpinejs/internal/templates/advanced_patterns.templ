@@ -1,0 +1,528 @@
+package templates
+
+templ AdvancedPatterns() {
+	@Base("Alpine.js デモ - 応用パターン") {
+		<div class="max-w-4xl mx-auto p-6">
+			<h1 class="text-3xl font-bold mb-6">Alpine.js 応用パターンデモ</h1>
+			
+			<!-- ナビゲーション -->
+			<div class="mb-8">
+				<a href="/" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">← ホームに戻る</a>
+			</div>
+
+			<div class="grid gap-8">
+				<!-- プラグインパターン -->
+				<div class="bg-white p-6 rounded-lg shadow-md">
+					<h2 class="text-2xl font-bold mb-4">プラグインパターン</h2>
+					
+					<!-- カスタムマジック -->
+					<div class="mb-6" x-data="{ message: 'Hello World' }">
+						<h3 class="font-medium mb-2">カスタムマジック ($uppercase)</h3>
+						<p class="mb-2">元の文字: <span x-text="message"></span></p>
+						<p class="mb-2">大文字変換: <span x-text="$uppercase(message)"></span></p>
+						<input type="text" x-model="message" class="border border-gray-300 rounded px-3 py-2">
+					</div>
+
+					<!-- カスタムディレクティブ -->
+					<div class="mb-6">
+						<h3 class="font-medium mb-2">カスタムディレクティブ (x-tooltip)</h3>
+						<div class="space-y-2">
+							<button x-tooltip="'これはツールチップメッセージです'" 
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+								ホバーしてみてください
+							</button>
+							<button x-tooltip="'別のツールチップです'" 
+								class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+								こちらもホバー
+							</button>
+						</div>
+					</div>
+
+					<script>
+						// カスタムマジック関数
+						document.addEventListener('alpine:init', () => {
+							Alpine.magic('uppercase', () => {
+								return (text) => text.toString().toUpperCase();
+							});
+
+							// カスタムディレクティブ
+							Alpine.directive('tooltip', (el, { expression }, { evaluate }) => {
+								const tooltip = document.createElement('div');
+								tooltip.className = 'absolute bg-gray-800 text-white text-sm px-2 py-1 rounded shadow-lg pointer-events-none z-50 opacity-0 transition-opacity';
+								document.body.appendChild(tooltip);
+
+								el.addEventListener('mouseenter', () => {
+									const text = evaluate(expression);
+									tooltip.textContent = text;
+									
+									const rect = el.getBoundingClientRect();
+									tooltip.style.left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + 'px';
+									tooltip.style.top = rect.top - tooltip.offsetHeight - 5 + 'px';
+									tooltip.style.opacity = '1';
+								});
+
+								el.addEventListener('mouseleave', () => {
+									tooltip.style.opacity = '0';
+								});
+							});
+						});
+					</script>
+				</div>
+
+				<!-- 複雑な状態管理 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="todoManager()" 
+					x-init="loadTodos()">
+					<h2 class="text-2xl font-bold mb-4">複雑な状態管理（高度なTODOアプリ）</h2>
+					
+					<!-- 統計情報 -->
+					<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+						<div class="bg-blue-50 p-3 rounded text-center">
+							<div class="text-2xl font-bold text-blue-600" x-text="stats.total"></div>
+							<div class="text-sm text-blue-800">総数</div>
+						</div>
+						<div class="bg-green-50 p-3 rounded text-center">
+							<div class="text-2xl font-bold text-green-600" x-text="stats.completed"></div>
+							<div class="text-sm text-green-800">完了</div>
+						</div>
+						<div class="bg-yellow-50 p-3 rounded text-center">
+							<div class="text-2xl font-bold text-yellow-600" x-text="stats.pending"></div>
+							<div class="text-sm text-yellow-800">未完了</div>
+						</div>
+						<div class="bg-red-50 p-3 rounded text-center">
+							<div class="text-2xl font-bold text-red-600" x-text="stats.overdue"></div>
+							<div class="text-sm text-red-800">期限切れ</div>
+						</div>
+					</div>
+
+					<!-- フィルターとソート -->
+					<div class="flex flex-wrap gap-4 mb-6">
+						<select x-model="filters.status" class="border border-gray-300 rounded px-3 py-2">
+							<option value="">全ての状態</option>
+							<option value="pending">未完了</option>
+							<option value="completed">完了</option>
+							<option value="overdue">期限切れ</option>
+						</select>
+						<select x-model="filters.priority" class="border border-gray-300 rounded px-3 py-2">
+							<option value="">全ての優先度</option>
+							<option value="high">高</option>
+							<option value="medium">中</option>
+							<option value="low">低</option>
+						</select>
+						<select x-model="sort" class="border border-gray-300 rounded px-3 py-2">
+							<option value="created">作成日順</option>
+							<option value="priority">優先度順</option>
+							<option value="dueDate">期限順</option>
+							<option value="title">タイトル順</option>
+						</select>
+						<button @click="clearFilters()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+							フィルタークリア
+						</button>
+					</div>
+
+					<!-- TODO追加フォーム -->
+					<form @submit.prevent="addTodo()" class="mb-6 space-y-4">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<input type="text" x-model="newTodo.title" placeholder="タイトル" required
+								class="border border-gray-300 rounded px-3 py-2">
+							<select x-model="newTodo.priority" class="border border-gray-300 rounded px-3 py-2">
+								<option value="low">低優先度</option>
+								<option value="medium">中優先度</option>
+								<option value="high">高優先度</option>
+							</select>
+						</div>
+						<textarea x-model="newTodo.description" placeholder="説明（任意）" 
+							class="w-full border border-gray-300 rounded px-3 py-2" rows="2"></textarea>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<input type="date" x-model="newTodo.dueDate" 
+								class="border border-gray-300 rounded px-3 py-2">
+							<button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+								TODO追加
+							</button>
+						</div>
+					</form>
+
+					<!-- TODO一覧 -->
+					<div class="space-y-2">
+						<template x-for="todo in filteredTodos" :key="todo.id">
+							<div class="border rounded p-4"
+								:class="{
+									'border-green-200 bg-green-50': todo.completed,
+									'border-red-200 bg-red-50': isOverdue(todo) && !todo.completed,
+									'border-yellow-200 bg-yellow-50': todo.priority === 'high' && !todo.completed && !isOverdue(todo),
+									'border-gray-200': todo.priority !== 'high' && !todo.completed && !isOverdue(todo)
+								}">
+								<div class="flex items-start justify-between">
+									<div class="flex-1">
+										<div class="flex items-center space-x-2 mb-2">
+											<input type="checkbox" :checked="todo.completed" 
+												@change="toggleTodo(todo.id)" class="rounded">
+											<h4 class="font-medium" 
+												:class="{ 'line-through text-gray-500': todo.completed }"
+												x-text="todo.title"></h4>
+											<span class="text-xs px-2 py-1 rounded"
+												:class="{
+													'bg-red-100 text-red-800': todo.priority === 'high',
+													'bg-yellow-100 text-yellow-800': todo.priority === 'medium',
+													'bg-gray-100 text-gray-800': todo.priority === 'low'
+												}"
+												x-text="priorityLabels[todo.priority]"></span>
+										</div>
+										<p class="text-sm text-gray-600 mb-2" x-show="todo.description" x-text="todo.description"></p>
+										<div class="flex items-center space-x-4 text-xs text-gray-500">
+											<span>作成: <span x-text="formatDate(todo.createdAt)"></span></span>
+											<span x-show="todo.dueDate">
+												期限: <span x-text="formatDate(todo.dueDate)"
+													:class="{ 'text-red-600 font-medium': isOverdue(todo) }"></span>
+											</span>
+										</div>
+									</div>
+									<div class="flex space-x-2">
+										<button @click="editTodo(todo)" class="text-blue-600 hover:text-blue-800 text-sm">
+											編集
+										</button>
+										<button @click="deleteTodo(todo.id)" class="text-red-600 hover:text-red-800 text-sm">
+											削除
+										</button>
+									</div>
+								</div>
+							</div>
+						</template>
+						<div x-show="filteredTodos.length === 0" class="text-center py-8 text-gray-500">
+							<p>条件に一致するTODOがありません</p>
+						</div>
+					</div>
+
+					<script>
+						function todoManager() {
+							return {
+								todos: [],
+								newTodo: {
+									title: '',
+									description: '',
+									priority: 'medium',
+									dueDate: ''
+								},
+								filters: {
+									status: '',
+									priority: ''
+								},
+								sort: 'created',
+								priorityLabels: {
+									high: '高',
+									medium: '中',
+									low: '低'
+								},
+								
+								get stats() {
+									const total = this.todos.length;
+									const completed = this.todos.filter(t => t.completed).length;
+									const pending = total - completed;
+									const overdue = this.todos.filter(t => this.isOverdue(t) && !t.completed).length;
+									
+									return { total, completed, pending, overdue };
+								},
+								
+								get filteredTodos() {
+									let filtered = this.todos;
+									
+									// ステータスフィルター
+									if (this.filters.status) {
+										filtered = filtered.filter(todo => {
+											if (this.filters.status === 'completed') return todo.completed;
+											if (this.filters.status === 'pending') return !todo.completed;
+											if (this.filters.status === 'overdue') return this.isOverdue(todo) && !todo.completed;
+											return true;
+										});
+									}
+									
+									// 優先度フィルター
+									if (this.filters.priority) {
+										filtered = filtered.filter(todo => todo.priority === this.filters.priority);
+									}
+									
+									// ソート
+									filtered.sort((a, b) => {
+										switch (this.sort) {
+											case 'priority':
+												const priorityOrder = { high: 3, medium: 2, low: 1 };
+												return priorityOrder[b.priority] - priorityOrder[a.priority];
+											case 'dueDate':
+												if (!a.dueDate && !b.dueDate) return 0;
+												if (!a.dueDate) return 1;
+												if (!b.dueDate) return -1;
+												return new Date(a.dueDate) - new Date(b.dueDate);
+											case 'title':
+												return a.title.localeCompare(b.title);
+											default:
+												return new Date(b.createdAt) - new Date(a.createdAt);
+										}
+									});
+									
+									return filtered;
+								},
+								
+								loadTodos() {
+									// ローカルストレージから読み込み
+									const stored = localStorage.getItem('alpine-todos');
+									if (stored) {
+										this.todos = JSON.parse(stored);
+									}
+								},
+								
+								saveTodos() {
+									localStorage.setItem('alpine-todos', JSON.stringify(this.todos));
+								},
+								
+								addTodo() {
+									if (this.newTodo.title.trim()) {
+										this.todos.push({
+											id: Date.now(),
+											title: this.newTodo.title.trim(),
+											description: this.newTodo.description.trim(),
+											priority: this.newTodo.priority,
+											dueDate: this.newTodo.dueDate,
+											completed: false,
+											createdAt: new Date().toISOString()
+										});
+										
+										this.newTodo = {
+											title: '',
+											description: '',
+											priority: 'medium',
+											dueDate: ''
+										};
+										
+										this.saveTodos();
+									}
+								},
+								
+								toggleTodo(id) {
+									const todo = this.todos.find(t => t.id === id);
+									if (todo) {
+										todo.completed = !todo.completed;
+										this.saveTodos();
+									}
+								},
+								
+								deleteTodo(id) {
+									if (confirm('このTODOを削除しますか？')) {
+										this.todos = this.todos.filter(t => t.id !== id);
+										this.saveTodos();
+									}
+								},
+								
+								editTodo(todo) {
+									const newTitle = prompt('新しいタイトル:', todo.title);
+									if (newTitle && newTitle.trim()) {
+										todo.title = newTitle.trim();
+										this.saveTodos();
+									}
+								},
+								
+								clearFilters() {
+									this.filters = { status: '', priority: '' };
+									this.sort = 'created';
+								},
+								
+								isOverdue(todo) {
+									if (!todo.dueDate) return false;
+									return new Date(todo.dueDate) < new Date();
+								},
+								
+								formatDate(dateString) {
+									return new Date(dateString).toLocaleDateString('ja-JP');
+								}
+							};
+						}
+					</script>
+				</div>
+
+				<!-- 高度なアニメーション -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="{
+						items: ['アイテム1', 'アイテム2', 'アイテム3'],
+						newItem: '',
+						draggedItem: null,
+						animating: false
+					}">
+					<h2 class="text-2xl font-bold mb-4">高度なアニメーションとトランジション</h2>
+					
+					<div class="space-y-6">
+						<!-- アイテム追加 -->
+						<div class="flex space-x-2">
+							<input type="text" x-model="newItem" placeholder="新しいアイテム" 
+								@keydown.enter="if (newItem.trim()) { items.push(newItem.trim()); newItem = ''; }"
+								class="flex-1 border border-gray-300 rounded px-3 py-2">
+							<button @click="if (newItem.trim()) { items.push(newItem.trim()); newItem = ''; }"
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+								追加
+							</button>
+						</div>
+
+						<!-- ドラッグ可能なリスト -->
+						<div class="space-y-2" x-ref="list">
+							<template x-for="(item, index) in items" :key="item">
+								<div class="bg-gray-50 p-4 rounded border cursor-move transition-all duration-200"
+									draggable="true"
+									@dragstart="draggedItem = index; $el.style.opacity = '0.5'"
+									@dragend="$el.style.opacity = '1'"
+									@dragover.prevent
+									@drop.prevent="
+										if (draggedItem !== null && draggedItem !== index) {
+											let draggedContent = items[draggedItem];
+											items.splice(draggedItem, 1);
+											items.splice(index, 0, draggedContent);
+											draggedItem = null;
+										}
+									"
+									x-transition:enter="transition ease-out duration-300"
+									x-transition:enter-start="opacity-0 transform -translate-y-2"
+									x-transition:enter-end="opacity-100 transform translate-y-0"
+									x-transition:leave="transition ease-in duration-300"
+									x-transition:leave-start="opacity-100 transform translate-y-0"
+									x-transition:leave-end="opacity-0 transform -translate-y-2">
+									<div class="flex items-center justify-between">
+										<span x-text="`${index + 1}. ${item}`"></span>
+										<button @click="items.splice(index, 1)" 
+											class="text-red-600 hover:text-red-800 text-sm">
+											削除
+										</button>
+									</div>
+								</div>
+							</template>
+						</div>
+
+						<!-- アニメーション制御 -->
+						<div class="space-y-4">
+							<button @click="
+								animating = true;
+								items = items.sort(() => Math.random() - 0.5);
+								setTimeout(() => animating = false, 600);
+							" 
+							:disabled="animating"
+							class="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white px-4 py-2 rounded">
+								<span x-show="!animating">ランダムソート</span>
+								<span x-show="animating">ソート中...</span>
+							</button>
+							
+							<button @click="items.reverse()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+								順序反転
+							</button>
+							
+							<button @click="items = []" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+								全削除
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- パフォーマンス最適化の例 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="performanceDemo()">
+					<h2 class="text-2xl font-bold mb-4">パフォーマンス最適化</h2>
+					
+					<div class="space-y-6">
+						<!-- 仮想スクロール風の最適化 -->
+						<div>
+							<h3 class="font-medium mb-2">大量データの効率的な表示</h3>
+							<div class="flex space-x-4 mb-4">
+								<button @click="generateData(1000)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+									1,000件生成
+								</button>
+								<button @click="generateData(10000)" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+									10,000件生成
+								</button>
+								<button @click="items = []" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+									クリア
+								</button>
+							</div>
+							
+							<div class="mb-2">
+								<input type="text" x-model="searchTerm" placeholder="検索..." 
+									@input.debounce.300ms="updateVisibleItems()"
+									class="border border-gray-300 rounded px-3 py-2">
+								<span class="ml-2 text-sm text-gray-600">
+									表示中: <span x-text="visibleItems.length"></span> / <span x-text="items.length"></span>
+								</span>
+							</div>
+							
+							<div class="border border-gray-300 rounded h-64 overflow-y-auto" x-ref="scrollContainer">
+								<template x-for="item in visibleItems.slice(0, 100)" :key="item.id">
+									<div class="p-2 border-b border-gray-100 hover:bg-gray-50">
+										<span x-text="item.name"></span>
+										<span class="text-sm text-gray-500 ml-2">ID: <span x-text="item.id"></span></span>
+									</div>
+								</template>
+								<div x-show="visibleItems.length > 100" class="p-4 text-center text-gray-500">
+									... および <span x-text="visibleItems.length - 100"></span> 件以上
+								</div>
+							</div>
+						</div>
+
+						<!-- メモ化の例 -->
+						<div>
+							<h3 class="font-medium mb-2">計算結果のメモ化</h3>
+							<div class="space-y-2">
+								<p>計算回数: <span x-text="calculationCount"></span></p>
+								<p>キャッシュヒット数: <span x-text="cacheHits"></span></p>
+								<p>fibonacci(30) = <span x-text="fibonacci(30)"></span></p>
+								<button @click="calculationCount = 0; cacheHits = 0; fibonacciCache = {}" 
+									class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+									リセット
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<script>
+						function performanceDemo() {
+							return {
+								items: [],
+								visibleItems: [],
+								searchTerm: '',
+								calculationCount: 0,
+								cacheHits: 0,
+								fibonacciCache: {},
+								
+								generateData(count) {
+									this.items = Array.from({ length: count }, (_, i) => ({
+										id: i + 1,
+										name: `アイテム ${i + 1} - ${Math.random().toString(36).substr(2, 9)}`
+									}));
+									this.updateVisibleItems();
+								},
+								
+								updateVisibleItems() {
+									if (!this.searchTerm) {
+										this.visibleItems = this.items;
+									} else {
+										const term = this.searchTerm.toLowerCase();
+										this.visibleItems = this.items.filter(item => 
+											item.name.toLowerCase().includes(term)
+										);
+									}
+								},
+								
+								fibonacci(n) {
+									if (this.fibonacciCache[n] !== undefined) {
+										this.cacheHits++;
+										return this.fibonacciCache[n];
+									}
+									
+									this.calculationCount++;
+									
+									if (n <= 1) {
+										return this.fibonacciCache[n] = n;
+									}
+									
+									return this.fibonacciCache[n] = this.fibonacci(n - 1) + this.fibonacci(n - 2);
+								}
+							};
+						}
+					</script>
+				</div>
+			</div>
+		</div>
+	}
+}

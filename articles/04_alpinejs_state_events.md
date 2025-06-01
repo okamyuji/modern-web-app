@@ -1,11 +1,3 @@
----
-title: "第4章 Alpine.jsによる状態管理とイベント処理"
-emoji: "😸" 
-type: "tech" 
-topics: ["golang","go","alpinejs","htmx"] 
-published: false
----
-
 # 第4章 Alpine.jsによる状態管理とイベント処理
 
 ## 1. Alpine.jsの本質的な理解

@@ -1,0 +1,183 @@
+package templates
+
+templ Targets() {
+	@Base("HTMX デモ - ターゲット指定") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">ターゲット指定デモ</h2>
+				<p class="mb-4 text-gray-600">
+					HTMXの<code>hx-target</code>属性を使用して、レスポンスを特定の要素に挿入する方法を学びます。
+				</p>
+				
+				<!-- 基本的なターゲット指定 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">1. 基本的なターゲット指定</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<button 
+								hx-get="/api/target-content?type=info"
+								hx-target="#basic-target"
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-2">
+								情報を表示
+							</button>
+							<button 
+								hx-get="/api/target-content?type=warning"
+								hx-target="#basic-target"
+								class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">
+								警告を表示
+							</button>
+						</div>
+						<div id="basic-target" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">ここにコンテンツが表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 複数ターゲット -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">2. 複数ターゲットの更新</h3>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div>
+							<button 
+								hx-get="/api/multi-target"
+								hx-target="#target-1"
+								hx-swap="innerHTML"
+								class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full">
+								ターゲット1を更新
+							</button>
+						</div>
+						<div>
+							<button 
+								hx-get="/api/multi-target"
+								hx-target="#target-2"
+								hx-swap="innerHTML"
+								class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded w-full">
+								ターゲット2を更新
+							</button>
+						</div>
+						<div>
+							<button 
+								hx-get="/api/multi-target"
+								hx-target="#target-3"
+								hx-swap="innerHTML"
+								class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full">
+								ターゲット3を更新
+							</button>
+						</div>
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+						<div id="target-1" class="p-4 border-2 border-green-300 rounded bg-green-50">
+							<p class="text-gray-500">ターゲット1</p>
+						</div>
+						<div id="target-2" class="p-4 border-2 border-purple-300 rounded bg-purple-50">
+							<p class="text-gray-500">ターゲット2</p>
+						</div>
+						<div id="target-3" class="p-4 border-2 border-red-300 rounded bg-red-50">
+							<p class="text-gray-500">ターゲット3</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- CSS セレクターによるターゲット指定 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">3. CSS セレクターによるターゲット指定</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<button 
+								hx-get="/api/selector-target?selector=.info-box"
+								hx-target=".info-box"
+								class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded mr-2 mb-2">
+								.info-box を更新
+							</button>
+							<button 
+								hx-get="/api/selector-target?selector=.status-box"
+								hx-target=".status-box"
+								class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded mb-2">
+								.status-box を更新
+							</button>
+						</div>
+						<div>
+							<div class="info-box p-3 border border-indigo-300 rounded bg-indigo-50 mb-2">
+								<p class="text-gray-500">情報ボックス</p>
+							</div>
+							<div class="status-box p-3 border border-teal-300 rounded bg-teal-50">
+								<p class="text-gray-500">ステータスボックス</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 親要素・兄弟要素のターゲット指定 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">4. 相対的なターゲット指定</h3>
+					<div class="border border-gray-300 rounded p-4">
+						<div class="flex justify-between items-center mb-4">
+							<h4 class="font-medium">親要素のターゲット指定</h4>
+							<button 
+								hx-get="/api/relative-target?type=parent"
+								hx-target="closest .parent-container"
+								hx-swap="innerHTML"
+								class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm">
+								親要素を更新
+							</button>
+						</div>
+						<div class="parent-container p-3 bg-orange-50 border border-orange-200 rounded">
+							<p class="text-gray-600">この親要素全体が更新されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- スワップ戦略 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">5. スワップ戦略の比較</h3>
+					<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+						<button 
+							hx-get="/api/swap-demo?content=innerHTML"
+							hx-target="#swap-target"
+							hx-swap="innerHTML"
+							class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm">
+							innerHTML
+						</button>
+						<button 
+							hx-get="/api/swap-demo?content=outerHTML"
+							hx-target="#swap-target"
+							hx-swap="outerHTML"
+							class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-sm">
+							outerHTML
+						</button>
+						<button 
+							hx-get="/api/swap-demo?content=beforeend"
+							hx-target="#swap-target"
+							hx-swap="beforeend"
+							class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-sm">
+							beforeend
+						</button>
+						<button 
+							hx-get="/api/swap-demo?content=afterbegin"
+							hx-target="#swap-target"
+							hx-swap="afterbegin"
+							class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm">
+							afterbegin
+						</button>
+					</div>
+					<div id="swap-target" class="p-4 border-2 border-dashed border-gray-300 rounded min-h-[100px]">
+						<p class="text-gray-500">スワップ対象エリア</p>
+					</div>
+				</div>
+
+				<!-- ナビゲーション -->
+				<div class="flex justify-between">
+					<a href="/triggers" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						← トリガー制御
+					</a>
+					<a href="/" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+						ホームに戻る
+					</a>
+					<a href="/indicators" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						読み込み表示 →
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}

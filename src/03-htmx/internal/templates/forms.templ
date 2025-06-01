@@ -1,0 +1,277 @@
+package templates
+
+templ Forms() {
+	@Base("HTMX デモ - フォーム処理") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">フォーム処理デモ</h2>
+				<p class="mb-4 text-gray-600">
+					HTMXを使用したフォーム処理、バリデーション、リアルタイム更新の方法を学びます。
+				</p>
+				
+				<!-- 基本的なフォーム送信 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">1. 基本的なフォーム送信</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<form hx-post="/api/form-submit" hx-target="#form-result-1" hx-indicator="#form-spinner-1">
+								<div class="space-y-4">
+									<div>
+										<label class="block text-sm font-medium text-gray-700">名前</label>
+										<input type="text" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="田中太郎">
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700">メールアドレス</label>
+										<input type="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="tanaka@example.com">
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700">メッセージ</label>
+										<textarea name="message" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="メッセージを入力してください"></textarea>
+									</div>
+									<button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+										送信
+									</button>
+									<div id="form-spinner-1" class="htmx-indicator inline-block ml-2">
+										<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div id="form-result-1" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">フォーム送信結果がここに表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- リアルタイムバリデーション -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">2. リアルタイムバリデーション</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<form hx-post="/api/validate-form" hx-target="#validation-result">
+								<div class="space-y-4">
+									<div>
+										<label class="block text-sm font-medium text-gray-700">ユーザー名</label>
+										<input 
+											type="text" 
+											name="username" 
+											hx-post="/api/validate-username"
+											hx-target="#username-validation"
+											hx-trigger="keyup changed delay:500ms"
+											class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+											placeholder="ユーザー名を入力">
+										<div id="username-validation" class="mt-1"></div>
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700">パスワード</label>
+										<input 
+											type="password" 
+											name="password" 
+											hx-post="/api/validate-password"
+											hx-target="#password-validation"
+											hx-trigger="keyup changed delay:500ms"
+											class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+											placeholder="パスワードを入力">
+										<div id="password-validation" class="mt-1"></div>
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700">パスワード確認</label>
+										<input 
+											type="password" 
+											name="password_confirm" 
+											hx-post="/api/validate-password-confirm"
+											hx-target="#password-confirm-validation"
+											hx-trigger="keyup changed delay:500ms"
+											hx-include="[name='password']"
+											class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+											placeholder="パスワードを再入力">
+										<div id="password-confirm-validation" class="mt-1"></div>
+									</div>
+									<button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+										登録
+									</button>
+								</div>
+							</form>
+						</div>
+						<div id="validation-result" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">バリデーション結果がここに表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 動的フォーム要素 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">3. 動的フォーム要素</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<form hx-post="/api/dynamic-form" hx-target="#dynamic-result">
+								<div class="space-y-4">
+									<div>
+										<label class="block text-sm font-medium text-gray-700">カテゴリ</label>
+										<select 
+											name="category" 
+											hx-get="/api/subcategories"
+											hx-target="#subcategory-container"
+											hx-trigger="change"
+											class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+											<option value="">カテゴリを選択</option>
+											<option value="technology">テクノロジー</option>
+											<option value="business">ビジネス</option>
+											<option value="design">デザイン</option>
+										</select>
+									</div>
+									<div id="subcategory-container">
+										<!-- サブカテゴリがここに動的に表示されます -->
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700">タイトル</label>
+										<input type="text" name="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="タイトルを入力">
+									</div>
+									<button type="submit" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
+										作成
+									</button>
+								</div>
+							</form>
+						</div>
+						<div id="dynamic-result" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">動的フォーム結果がここに表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- ファイルアップロード -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">4. ファイルアップロード</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<form hx-post="/api/file-upload" hx-target="#upload-result" hx-indicator="#upload-spinner" hx-encoding="multipart/form-data">
+								<div class="space-y-4">
+									<div>
+										<label class="block text-sm font-medium text-gray-700">ファイル選択</label>
+										<input 
+											type="file" 
+											name="file" 
+											accept="image/*,.pdf,.txt"
+											class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700">説明</label>
+										<input type="text" name="description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="ファイルの説明">
+									</div>
+									<button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+										アップロード
+									</button>
+									<div id="upload-spinner" class="htmx-indicator">
+										<div class="flex items-center">
+											<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+											<span class="ml-2 text-red-600">アップロード中...</span>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div id="upload-result" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">アップロード結果がここに表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- インライン編集 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">5. インライン編集</h3>
+					<div class="space-y-4">
+						<div class="border border-gray-300 rounded p-4">
+							<h4 class="font-medium mb-2">ユーザー情報</h4>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label class="block text-sm font-medium text-gray-700">名前</label>
+									<div 
+										id="name-display" 
+										hx-get="/api/edit-field?field=name"
+										hx-target="this"
+										hx-trigger="click"
+										class="mt-1 p-2 border border-transparent rounded cursor-pointer hover:border-gray-300 hover:bg-gray-50">
+										田中太郎 <span class="text-xs text-gray-500">(クリックして編集)</span>
+									</div>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700">職業</label>
+									<div 
+										id="job-display" 
+										hx-get="/api/edit-field?field=job"
+										hx-target="this"
+										hx-trigger="click"
+										class="mt-1 p-2 border border-transparent rounded cursor-pointer hover:border-gray-300 hover:bg-gray-50">
+										ソフトウェアエンジニア <span class="text-xs text-gray-500">(クリックして編集)</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- バルク操作 -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">6. バルク操作</h3>
+					<div class="space-y-4">
+						<div class="flex space-x-2">
+							<button 
+								hx-post="/api/bulk-action?action=select-all"
+								hx-target="#bulk-list"
+								class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded text-sm">
+								全選択
+							</button>
+							<button 
+								hx-post="/api/bulk-action?action=deselect-all"
+								hx-target="#bulk-list"
+								class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+								全解除
+							</button>
+							<button 
+								hx-post="/api/bulk-action?action=delete-selected"
+								hx-target="#bulk-result"
+								hx-include="#bulk-list input[type='checkbox']:checked"
+								class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+								選択項目を削除
+							</button>
+						</div>
+						<div id="bulk-list" class="space-y-2">
+							<label class="flex items-center space-x-2">
+								<input type="checkbox" name="items" value="1" class="rounded">
+								<span>アイテム 1</span>
+							</label>
+							<label class="flex items-center space-x-2">
+								<input type="checkbox" name="items" value="2" class="rounded">
+								<span>アイテム 2</span>
+							</label>
+							<label class="flex items-center space-x-2">
+								<input type="checkbox" name="items" value="3" class="rounded">
+								<span>アイテム 3</span>
+							</label>
+							<label class="flex items-center space-x-2">
+								<input type="checkbox" name="items" value="4" class="rounded">
+								<span>アイテム 4</span>
+							</label>
+						</div>
+						<div id="bulk-result" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">バルク操作結果がここに表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- ナビゲーション -->
+				<div class="flex justify-between">
+					<a href="/indicators" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						← 読み込み表示
+					</a>
+					<a href="/" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+						ホームに戻る
+					</a>
+					<a href="/progressive" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						プログレッシブ →
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}

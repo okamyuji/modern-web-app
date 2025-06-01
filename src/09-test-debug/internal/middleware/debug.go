@@ -14,16 +14,19 @@ type debugResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
 	body       *bytes.Buffer
+	written    bool
 }
 
 func (drw *debugResponseWriter) WriteHeader(code int) {
-	drw.statusCode = code
-	drw.ResponseWriter.WriteHeader(code)
+	if !drw.written {
+		drw.statusCode = code
+		drw.ResponseWriter.WriteHeader(code)
+	}
 }
 
 func (drw *debugResponseWriter) Write(b []byte) (int, error) {
-	drw.body.Write(b)
-	return drw.ResponseWriter.Write(b)
+	// バッファにのみ書き込み、実際のレスポンスには書き込まない
+	return drw.body.Write(b)
 }
 
 // AppError represents an application error with additional context
@@ -123,8 +126,14 @@ func DebugPanel(isDev bool) func(http.Handler) http.Handler {
 				}
 
 				// コンテンツ長を更新
-				w.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
-				w.Write([]byte(body))
+				drw.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
+				// 実際のレスポンスに書き込む
+				drw.ResponseWriter.Write([]byte(body))
+			} else {
+				// HTML以外の場合はそのまま出力
+				if drw.body.Len() > 0 {
+					drw.ResponseWriter.Write(drw.body.Bytes())
+				}
 			}
 		})
 	}

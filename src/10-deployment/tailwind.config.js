@@ -1,9 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
+    "./cmd/**/*.go",
+    "./internal/**/*.go",
     "./internal/templates/**/*.templ",
     "./internal/templates/**/*.html",
-    "./static/js/**/*.js"
+    "./static/js/**/*.js",
+    "./static/**/*.html"
   ],
   darkMode: 'media',
   theme: {

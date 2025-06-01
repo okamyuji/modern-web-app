@@ -1,0 +1,215 @@
+package templates
+
+templ Indicators() {
+	@Base("HTMX デモ - 読み込み表示") {
+		<div class="grid gap-6">
+			<div class="bg-white p-6 rounded-lg shadow-md">
+				<h2 class="text-2xl font-bold mb-4">読み込み表示デモ</h2>
+				<p class="mb-4 text-gray-600">
+					HTMXの<code>hx-indicator</code>属性を使用して、リクエスト中の読み込み状態を表示する方法を学びます。
+				</p>
+				
+				<!-- 基本的なインジケーター -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">1. 基本的な読み込みインジケーター</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<button 
+								hx-get="/api/slow-response?delay=2000"
+								hx-target="#basic-result"
+								hx-indicator="#basic-spinner"
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+								データを読み込む (2秒)
+							</button>
+							<div id="basic-spinner" class="htmx-indicator inline-block ml-2">
+								<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+							</div>
+						</div>
+						<div id="basic-result" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">ここに結果が表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 複数のインジケーター -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">2. 複数の読み込みインジケーター</h3>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div class="text-center">
+							<button 
+								hx-get="/api/slow-response?delay=1500&type=users"
+								hx-target="#users-result"
+								hx-indicator="#users-spinner"
+								class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full">
+								ユーザー一覧
+							</button>
+							<div id="users-spinner" class="htmx-indicator mt-2">
+								<div class="flex items-center justify-center">
+									<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+									<span class="ml-2 text-green-600">読み込み中...</span>
+								</div>
+							</div>
+							<div id="users-result" class="mt-4 p-3 border border-green-300 rounded bg-green-50 min-h-[80px]">
+								<p class="text-gray-500">ユーザーデータ</p>
+							</div>
+						</div>
+						<div class="text-center">
+							<button 
+								hx-get="/api/slow-response?delay=2500&type=stats"
+								hx-target="#stats-result"
+								hx-indicator="#stats-spinner"
+								class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded w-full">
+								統計情報
+							</button>
+							<div id="stats-spinner" class="htmx-indicator mt-2">
+								<div class="flex items-center justify-center">
+									<div class="animate-pulse bg-purple-500 rounded-full h-6 w-6"></div>
+									<span class="ml-2 text-purple-600">計算中...</span>
+								</div>
+							</div>
+							<div id="stats-result" class="mt-4 p-3 border border-purple-300 rounded bg-purple-50 min-h-[80px]">
+								<p class="text-gray-500">統計データ</p>
+							</div>
+						</div>
+						<div class="text-center">
+							<button 
+								hx-get="/api/slow-response?delay=3000&type=reports"
+								hx-target="#reports-result"
+								hx-indicator="#reports-spinner"
+								class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full">
+								レポート生成
+							</button>
+							<div id="reports-spinner" class="htmx-indicator mt-2">
+								<div class="flex items-center justify-center">
+									<div class="animate-bounce bg-red-500 rounded-full h-2 w-2 mr-1"></div>
+									<div class="animate-bounce bg-red-500 rounded-full h-2 w-2 mr-1" style="animation-delay: 0.1s"></div>
+									<div class="animate-bounce bg-red-500 rounded-full h-2 w-2" style="animation-delay: 0.2s"></div>
+									<span class="ml-2 text-red-600">生成中...</span>
+								</div>
+							</div>
+							<div id="reports-result" class="mt-4 p-3 border border-red-300 rounded bg-red-50 min-h-[80px]">
+								<p class="text-gray-500">レポートデータ</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- プログレスバー -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">3. プログレスバー付き読み込み</h3>
+					<div class="space-y-4">
+						<button 
+							hx-get="/api/progress-response"
+							hx-target="#progress-result"
+							hx-indicator="#progress-bar"
+							class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
+							プログレス付きで実行
+						</button>
+						<div id="progress-bar" class="htmx-indicator">
+							<div class="w-full bg-gray-200 rounded-full h-2.5">
+								<div class="bg-indigo-600 h-2.5 rounded-full animate-pulse" style="width: 45%"></div>
+							</div>
+							<p class="text-sm text-indigo-600 mt-1">処理中... 45%</p>
+						</div>
+						<div id="progress-result" class="p-4 border-2 border-dashed border-gray-300 rounded">
+							<p class="text-gray-500">プログレス結果がここに表示されます</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- スケルトンローディング -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">4. スケルトンローディング</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<button 
+								hx-get="/api/skeleton-response"
+								hx-target="#skeleton-result"
+								hx-indicator="#skeleton-loader"
+								class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded">
+								コンテンツを読み込む
+							</button>
+						</div>
+						<div>
+							<div id="skeleton-loader" class="htmx-indicator space-y-3">
+								<div class="animate-pulse">
+									<div class="h-4 bg-gray-300 rounded w-3/4"></div>
+									<div class="h-4 bg-gray-300 rounded w-1/2 mt-2"></div>
+									<div class="h-4 bg-gray-300 rounded w-5/6 mt-2"></div>
+								</div>
+							</div>
+							<div id="skeleton-result" class="p-4 border border-teal-300 rounded bg-teal-50">
+								<p class="text-gray-500">実際のコンテンツがここに表示されます</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- カスタムインジケーター -->
+				<div class="mb-8">
+					<h3 class="text-lg font-semibold mb-3">5. カスタムインジケーター</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="space-y-4">
+							<button 
+								hx-get="/api/slow-response?delay=2000&type=custom1"
+								hx-target="#custom-result-1"
+								hx-indicator="#custom-spinner-1"
+								class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded w-full">
+								カスタム1 (ドット)
+							</button>
+							<button 
+								hx-get="/api/slow-response?delay=2000&type=custom2"
+								hx-target="#custom-result-2"
+								hx-indicator="#custom-spinner-2"
+								class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded w-full">
+								カスタム2 (波)
+							</button>
+						</div>
+						<div class="space-y-4">
+							<div>
+								<div id="custom-spinner-1" class="htmx-indicator text-center py-4">
+									<div class="inline-flex space-x-1">
+										<div class="w-2 h-2 bg-yellow-500 rounded-full animate-bounce"></div>
+										<div class="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+										<div class="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+									</div>
+									<p class="text-yellow-600 text-sm mt-2">処理中...</p>
+								</div>
+								<div id="custom-result-1" class="p-3 border border-yellow-300 rounded bg-yellow-50">
+									<p class="text-gray-500">カスタム結果1</p>
+								</div>
+							</div>
+							<div>
+								<div id="custom-spinner-2" class="htmx-indicator text-center py-4">
+									<div class="inline-block">
+										<svg class="animate-spin h-8 w-8 text-pink-500" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+									</div>
+									<p class="text-pink-600 text-sm mt-2">読み込み中...</p>
+								</div>
+								<div id="custom-result-2" class="p-3 border border-pink-300 rounded bg-pink-50">
+									<p class="text-gray-500">カスタム結果2</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- ナビゲーション -->
+				<div class="flex justify-between">
+					<a href="/targets" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						← ターゲット指定
+					</a>
+					<a href="/" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+						ホームに戻る
+					</a>
+					<a href="/forms" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+						フォーム処理 →
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}

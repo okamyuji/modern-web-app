@@ -1,11 +1,3 @@
----
-title: "第8章 パフォーマンス最適化とセキュリティ"
-emoji: "😸" 
-type: "tech" 
-topics: ["golang","go","alpinejs","htmx"] 
-published: false
----
-
 # 第8章 パフォーマンス最適化とセキュリティ
 
 ## 1. パフォーマンス最適化の実践

@@ -1,0 +1,285 @@
+package templates
+
+templ HTMXIntegration() {
+	@Base("Alpine.js デモ - HTMX統合") {
+		<div class="max-w-4xl mx-auto p-6">
+			<h1 class="text-3xl font-bold mb-6">Alpine.js + HTMX 統合デモ</h1>
+			
+			<!-- ナビゲーション -->
+			<div class="mb-8">
+				<a href="/" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">← ホームに戻る</a>
+			</div>
+
+			<div class="grid gap-8">
+				<!-- HTMX + Alpine.js 基本統合 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="{ loading: false, response: '', error: '' }">
+					<h2 class="text-2xl font-bold mb-4">HTMX + Alpine.js 基本統合</h2>
+					<div class="space-y-4">
+						<div>
+							<button 
+								hx-get="/api/time"
+								hx-trigger="click"
+								@htmx:before-request="loading = true; error = ''"
+								@htmx:after-request="loading = false"
+								@htmx:response-error="error = 'エラーが発生しました'"
+								hx-swap="none"
+								@htmx:after-swap="response = $event.detail.xhr.responseText"
+								class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+								:disabled="loading">
+								<span x-show="!loading">現在時刻を取得</span>
+								<span x-show="loading">読み込み中...</span>
+							</button>
+						</div>
+						<div x-show="response" class="p-4 bg-green-50 border border-green-200 rounded">
+							<p class="text-green-800">レスポンス: <span x-text="response"></span></p>
+						</div>
+						<div x-show="error" class="p-4 bg-red-50 border border-red-200 rounded">
+							<p class="text-red-800" x-text="error"></p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 動的フォーム -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="{ 
+						formData: { name: '', email: '', message: '' },
+						validationErrors: {},
+						isSubmitting: false,
+						submitResult: null
+					}">
+					<h2 class="text-2xl font-bold mb-4">動的フォーム検証</h2>
+					<form 
+						hx-post="/api/contact"
+						hx-trigger="submit"
+						@htmx:before-request="isSubmitting = true; validationErrors = {}; submitResult = null"
+						@htmx:after-request="isSubmitting = false"
+						@htmx:response-error="submitResult = { type: 'error', message: 'サーバーエラーが発生しました' }"
+						hx-swap="none"
+						class="space-y-4">
+						
+						<div>
+							<label class="block text-sm font-medium mb-1">名前</label>
+							<input type="text" 
+								name="name"
+								x-model="formData.name"
+								@input.debounce.500ms="if (formData.name.length > 0) validationErrors.name = ''"
+								:class="validationErrors.name ? 'border-red-500' : 'border-gray-300'"
+								class="w-full border rounded px-3 py-2">
+							<p x-show="validationErrors.name" class="text-red-500 text-sm mt-1" x-text="validationErrors.name"></p>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium mb-1">メール</label>
+							<input type="email" 
+								name="email"
+								x-model="formData.email"
+								@input.debounce.500ms="if (formData.email.includes('@')) validationErrors.email = ''"
+								:class="validationErrors.email ? 'border-red-500' : 'border-gray-300'"
+								class="w-full border rounded px-3 py-2">
+							<p x-show="validationErrors.email" class="text-red-500 text-sm mt-1" x-text="validationErrors.email"></p>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium mb-1">メッセージ</label>
+							<textarea 
+								name="message"
+								x-model="formData.message"
+								@input.debounce.500ms="if (formData.message.length > 10) validationErrors.message = ''"
+								:class="validationErrors.message ? 'border-red-500' : 'border-gray-300'"
+								class="w-full border rounded px-3 py-2" 
+								rows="4"></textarea>
+							<p x-show="validationErrors.message" class="text-red-500 text-sm mt-1" x-text="validationErrors.message"></p>
+						</div>
+
+						<button type="submit" 
+							:disabled="isSubmitting || !formData.name || !formData.email || !formData.message"
+							class="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white px-4 py-2 rounded">
+							<span x-show="!isSubmitting">送信</span>
+							<span x-show="isSubmitting">送信中...</span>
+						</button>
+					</form>
+
+					<div x-show="submitResult" class="mt-4">
+						<div :class="submitResult?.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'"
+							class="p-4 border rounded">
+							<p x-text="submitResult?.message"></p>
+						</div>
+					</div>
+				</div>
+
+				<!-- 動的コンテンツ読み込み -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="{ 
+						activeTab: 'users',
+						loadingStates: {},
+						contentCache: {},
+						error: null
+					}">
+					<h2 class="text-2xl font-bold mb-4">動的コンテンツ読み込み</h2>
+					
+					<!-- タブナビゲーション -->
+					<div class="flex border-b mb-4">
+						<button @click="activeTab = 'users'" 
+							:class="activeTab === 'users' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+							class="px-4 py-2 border-b-2 font-medium">
+							ユーザー一覧
+						</button>
+						<button @click="activeTab = 'posts'" 
+							:class="activeTab === 'posts' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+							class="px-4 py-2 border-b-2 font-medium">
+							投稿一覧
+						</button>
+						<button @click="activeTab = 'comments'" 
+							:class="activeTab === 'comments' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+							class="px-4 py-2 border-b-2 font-medium">
+							コメント一覧
+						</button>
+					</div>
+
+					<!-- タブコンテンツ -->
+					<div class="min-h-32">
+						<div x-show="activeTab === 'users'" id="users-content"
+							hx-get="/api/users"
+							hx-trigger="revealed once"
+							@htmx:before-request="loadingStates.users = true; error = null"
+							@htmx:after-request="loadingStates.users = false"
+							@htmx:response-error="error = 'ユーザー一覧の読み込みに失敗しました'">
+							<div x-show="loadingStates.users" class="text-center py-8">
+								<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+								<p class="mt-2 text-gray-600">ユーザー一覧を読み込み中...</p>
+							</div>
+						</div>
+
+						<div x-show="activeTab === 'posts'" id="posts-content"
+							hx-get="/api/posts"
+							hx-trigger="revealed once"
+							@htmx:before-request="loadingStates.posts = true; error = null"
+							@htmx:after-request="loadingStates.posts = false"
+							@htmx:response-error="error = '投稿一覧の読み込みに失敗しました'">
+							<div x-show="loadingStates.posts" class="text-center py-8">
+								<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+								<p class="mt-2 text-gray-600">投稿一覧を読み込み中...</p>
+							</div>
+						</div>
+
+						<div x-show="activeTab === 'comments'" id="comments-content"
+							hx-get="/api/comments"
+							hx-trigger="revealed once"
+							@htmx:before-request="loadingStates.comments = true; error = null"
+							@htmx:after-request="loadingStates.comments = false"
+							@htmx:response-error="error = 'コメント一覧の読み込みに失敗しました'">
+							<div x-show="loadingStates.comments" class="text-center py-8">
+								<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+								<p class="mt-2 text-gray-600">コメント一覧を読み込み中...</p>
+							</div>
+						</div>
+
+						<div x-show="error" class="p-4 bg-red-50 border border-red-200 rounded text-red-800">
+							<p x-text="error"></p>
+							<button @click="error = null" class="mt-2 text-sm underline">閉じる</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- リアルタイム更新 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="{ 
+						isLive: false,
+						notifications: [],
+						lastUpdate: null
+					}">
+					<h2 class="text-2xl font-bold mb-4">リアルタイム更新</h2>
+					
+					<div class="space-y-4">
+						<div class="flex items-center justify-between">
+							<span>リアルタイム更新:</span>
+							<button @click="isLive = !isLive" 
+								:class="isLive ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'"
+								class="text-white px-4 py-2 rounded">
+								<span x-text="isLive ? '停止' : '開始'"></span>
+							</button>
+						</div>
+
+						<div x-show="isLive" 
+							hx-get="/api/notifications"
+							hx-trigger="every 3s"
+							@htmx:after-request="lastUpdate = new Date().toLocaleTimeString()"
+							hx-swap="none"
+							@htmx:after-swap="notifications.unshift({id: Date.now(), message: $event.detail.xhr.responseText, time: new Date().toLocaleTimeString()}); if (notifications.length > 5) notifications.pop()"
+							class="p-4 bg-blue-50 border border-blue-200 rounded">
+							<p class="text-blue-800">
+								リアルタイム更新中... 
+								<span x-show="lastUpdate">最終更新: <span x-text="lastUpdate"></span></span>
+							</p>
+						</div>
+
+						<div x-show="notifications.length > 0">
+							<h3 class="font-medium mb-2">最新の通知:</h3>
+							<div class="space-y-2">
+								<template x-for="notification in notifications" :key="notification.id">
+									<div class="p-3 bg-gray-50 border border-gray-200 rounded">
+										<p x-text="notification.message"></p>
+										<p class="text-xs text-gray-500" x-text="notification.time"></p>
+									</div>
+								</template>
+							</div>
+							<button @click="notifications = []" class="mt-2 text-sm text-gray-600 underline">
+								通知をクリア
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- インタラクティブ検索 -->
+				<div class="bg-white p-6 rounded-lg shadow-md" 
+					x-data="{ 
+						searchQuery: '',
+						searchResults: [],
+						isSearching: false,
+						selectedIndex: -1
+					}">
+					<h2 class="text-2xl font-bold mb-4">インタラクティブ検索</h2>
+					
+					<div class="space-y-4">
+						<div class="relative">
+							<input type="text" 
+								x-model="searchQuery"
+								@input.debounce.300ms="if (searchQuery.length > 2) { $el.setAttribute('hx-get', '/api/search?q=' + encodeURIComponent(searchQuery)); htmx.trigger($el, 'search') }"
+								hx-trigger="search"
+								@htmx:before-request="isSearching = true"
+								@htmx:after-request="isSearching = false"
+								@htmx:after-swap="searchResults = JSON.parse($event.detail.xhr.responseText); selectedIndex = -1"
+								@keydown.arrow-down.prevent="selectedIndex = Math.min(selectedIndex + 1, searchResults.length - 1)"
+								@keydown.arrow-up.prevent="selectedIndex = Math.max(selectedIndex - 1, -1)"
+								@keydown.enter.prevent="if (selectedIndex >= 0) alert('選択: ' + searchResults[selectedIndex].title)"
+								hx-swap="none"
+								placeholder="検索キーワードを入力..."
+								class="w-full border border-gray-300 rounded px-3 py-2 pr-10">
+							
+							<div x-show="isSearching" class="absolute right-3 top-3">
+								<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+							</div>
+						</div>
+
+						<div x-show="searchResults.length > 0" class="border border-gray-300 rounded max-h-64 overflow-y-auto">
+							<template x-for="(result, index) in searchResults" :key="result.id">
+								<div @click="alert('選択: ' + result.title)"
+									:class="index === selectedIndex ? 'bg-blue-100' : 'hover:bg-gray-50'"
+									class="p-3 border-b border-gray-200 cursor-pointer">
+									<h4 class="font-medium" x-text="result.title"></h4>
+									<p class="text-sm text-gray-600" x-text="result.description"></p>
+								</div>
+							</template>
+						</div>
+
+						<div x-show="searchQuery.length > 2 && searchResults.length === 0 && !isSearching"
+							class="text-gray-500 text-center py-4">
+							検索結果が見つかりませんでした
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

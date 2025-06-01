@@ -33,6 +33,10 @@ func NewDatabase() (*Database, error) {
 	return &Database{DB: sqliteDB, driver: "sqlite3"}, nil
 }
 
+func (db *Database) GetDriver() string {
+	return db.driver
+}
+
 func connectPostgreSQL() (*sql.DB, error) {
 	host := getEnv("DB_HOST", "localhost")
 	port := getEnv("DB_PORT", "5432")
@@ -129,6 +133,18 @@ func (db *Database) InitSchema() error {
 }
 
 func (db *Database) SeedTestData() error {
+	// まず既存のテストデータがあるかチェック
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM todos").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check existing data: %w", err)
+	}
+
+	// 既にデータがある場合はスキップ
+	if count > 0 {
+		return nil
+	}
+
 	testTodos := []struct {
 		title       string
 		description string
@@ -172,11 +188,10 @@ func (db *Database) SeedTestData() error {
 		if db.driver == "postgres" {
 			query = `
 			INSERT INTO todos (title, description, priority, completed)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT DO NOTHING`
+			VALUES ($1, $2, $3, $4)`
 		} else {
 			query = `
-			INSERT OR IGNORE INTO todos (title, description, priority, completed)
+			INSERT INTO todos (title, description, priority, completed)
 			VALUES (?, ?, ?, ?)`
 		}
 

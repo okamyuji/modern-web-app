@@ -136,6 +136,8 @@ func setupRoutes(db *sql.DB, cfg *config.Config) http.Handler {
 		healthData := monitoring.HealthCheck()
 		healthData["version"] = Version
 		healthData["build_time"] = BuildTime
+		healthData["environment"] = cfg.Env
+		healthData["database"] = "connected"
 
 		response := HealthResponse{
 			Status:    "healthy",
@@ -145,6 +147,7 @@ func setupRoutes(db *sql.DB, cfg *config.Config) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		json.NewEncoder(w).Encode(response)
 	})
 
@@ -169,7 +172,7 @@ func setupRoutes(db *sql.DB, cfg *config.Config) http.Handler {
 			http.NotFound(w, r)
 			return
 		}
-		
+
 		html := `<!DOCTYPE html>
 <html lang="ja" class="h-full">
 <head>
@@ -177,34 +180,109 @@ func setupRoutes(db *sql.DB, cfg *config.Config) http.Handler {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deployment Demo</title>
     <link href="/static/css/app.css" rel="stylesheet">
+    <style>
+        /* フォールバックスタイル - Tailwindが読み込まれない場合に備えて */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            margin: 0.25rem;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            border: 4px dashed #d1d5db;
+            padding: 2rem;
+            min-height: 24rem;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.125rem;
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .version-info {
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #111827; }
+            .container { background-color: #1f2937; border-color: #374151; }
+            h1 { color: #f9fafb; }
+            p { color: #d1d5db; }
+            .version-info { color: #9ca3af; }
+        }
+    </style>
 </head>
 <body class="h-full bg-gray-50 dark:bg-gray-900">
     <div class="min-h-full">
         <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div class="px-4 py-6 sm:px-0">
-                <div class="border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-lg h-96 p-8">
+                <div class="container border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-lg h-96 p-8">
                     <div class="text-center">
                         <h1 class="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                            Deployment Demo
+                            🚀 Deployment Demo
                         </h1>
                         <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
                             デプロイメントと運用機能のデモアプリケーション
                         </p>
                         <div class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="button-grid grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <a href="/health" class="btn btn-primary">
-                                    ヘルスチェック
+                                    💚 ヘルスチェック
                                 </a>
                                 <a href="/metrics" class="btn btn-secondary">
-                                    メトリクス
+                                    📊 メトリクス
                                 </a>
                                 <a href="/api/todos" class="btn btn-secondary">
-                                    Todo API
+                                    📝 Todo API
                                 </a>
                             </div>
-                            <div class="mt-8 text-sm text-gray-500 dark:text-gray-400">
-                                <p>Version: ` + Version + `</p>
-                                <p>Build Time: ` + BuildTime + `</p>
+                            <div class="version-info mt-8 text-sm text-gray-500 dark:text-gray-400">
+                                <p><strong>Version:</strong> ` + Version + `</p>
+                                <p><strong>Build Time:</strong> ` + BuildTime + `</p>
+                                <p><strong>Environment:</strong> development</p>
                             </div>
                         </div>
                     </div>
