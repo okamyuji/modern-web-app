@@ -1,3 +1,11 @@
+---
+title: "第3章 HTMXによるインタラクティブなUI"
+emoji: "😸" 
+type: "tech" 
+topics: ["golang","go","alpinejs","htmx"] 
+published: false
+---
+
 # 第3章 HTMXによるインタラクティブなUI
 
 ## 3.1 HTMXの思想とアプローチ

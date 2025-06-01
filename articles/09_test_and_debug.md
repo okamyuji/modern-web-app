@@ -1,3 +1,10 @@
+---
+title: "第9章 テストとデバッグ"
+emoji: "😸" 
+type: "tech" 
+topics: ["golang","go","alpinejs","htmx"] 
+published: false
+---
 
 # 第9章 テストとデバッグ
 
