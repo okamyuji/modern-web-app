@@ -1,3 +1,7 @@
+---
+title: "Golangの基礎と実践パターン"
+---
+
 # 第2章 Golangの基礎と実践パターン
 
 ## 2.1 Goの特徴とWeb開発における利点
@@ -76,17 +80,16 @@ func main() {
 
 ```text
 internal/
-├── domain/          # エンティティとビジネスルール
-│   ├── models/      # ドメインモデル
-│   └── services/    # ドメインサービス
-├── usecases/        # アプリケーションのユースケース
-├── interfaces/      # インターフェースアダプター
-│   ├── handlers/    # HTTPハンドラー
-│   ├── repositories/ # データアクセス実装
-│   └── presenters/  # プレゼンテーション層
-└── infrastructure/  # 外部技術の詳細
-    ├── database/    # データベース設定
-    └── server/      # サーバー設定
+├── domain/           # エンティティとビジネスルール
+│   ├── models/       # ドメインモデル
+├── infrastructure/   # 外部技術の詳細
+│   ├── logger/       # ログ設定
+│   ├── middleware/   # ミドルウェア設定
+│   └── repositories/ # データアクセス設定
+├── interfaces/       # インターフェースアダプター
+│   ├── handlers/     # HTTPハンドラー
+│   └── repositories/ # データアクセス実装
+├── usecases/         # アプリケーションのユースケース
 ```
 
 ### 2.2.3 インターフェースを活用した設計

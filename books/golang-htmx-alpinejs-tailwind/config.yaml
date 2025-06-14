@@ -1,0 +1,16 @@
+title: "GolangとHTMX、Alpine.js、Tailwind CSSによるモダンWebアプリケーション開発"
+summary: "この本では、GolangとHTMX、Alpine.js、Tailwind CSSを使用して、効率的なWebアプリケーションを開発する方法を学びます。"
+topics: ["go","golang", "htmx", "alpinejs", "tailwind"]
+published: false
+price: 0
+chapters:
+  - 01_env_and_setup
+  - 02_golang_elements
+  - 03_htmlx
+  - 04_alpinejs_state_events
+  - 05_tailwind
+  - 06_practical_app_dev_01
+  - 07_practical_app_dev_02
+  - 08_performance_and_security
+  - 09_test_and_debug
+  - 10_deployment

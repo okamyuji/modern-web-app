@@ -1,4 +1,12 @@
+---
+title: "環境構築とプロジェクトセットアップ"
+---
+
 # 第1章 環境構築とプロジェクトセットアップ
+
+ここでは以下のようなアプリケーションを作成します。
+
+![画面](/images/01-00.png)
 
 ## 1.1 技術スタックの概要
 
@@ -56,15 +64,12 @@ go install github.com/a-h/templ/cmd/templ@latest
 
 ### 1.2.2 プロジェクト構造の設計
 
-効率的な開発のため、以下の構造を採用します：
+効率的な開発のため、以下の構造を採用します。
 
 ```text
 myapp/
 ├── cmd/server/          # アプリケーションのエントリーポイント
 ├── internal/            # 内部パッケージ（外部からアクセス不可）
-│   ├── handlers/        # HTTPハンドラー
-│   ├── models/          # データモデル
-│   ├── repositories/    # データアクセス層
 │   └── templates/       # Templテンプレート
 ├── ui/
 │   └── static/         # 静的ファイル（CSS、JS）
@@ -88,8 +93,8 @@ mkdir myapp && cd myapp
 go mod init myapp
 
 # ディレクトリ構造を作成
-mkdir -p cmd/server internal/{handlers,models,repositories,templates}
-mkdir -p ui/static/{css,js}
+mkdir -p cmd/server internal/{templates}
+mkdir -p ui/static/css
 ```
 
 ### 1.3.2 Tailwind CSSの設定
@@ -166,7 +171,7 @@ tmp_dir = "tmp"
 
 ### 1.3.4 Makefileの作成
 
-複雑なコマンドを簡単に実行するため、`Makefile`を作成します：
+複雑なコマンドを簡単に実行するため、`Makefile`を作成します。
 
 ```makefile
 .PHONY: dev build clean
@@ -217,7 +222,7 @@ templ Base(title string) {
 
 ### 1.4.2 ホームページテンプレートの作成
 
-`internal/templates/home.templ`でホームページを作成：
+`internal/templates/home.templ`でホームページを作成します。
 
 ```go
 package templates
@@ -255,7 +260,7 @@ templ Home() {
 
 ### 1.4.3 サーバーの実装
 
-`cmd/server/main.go`でサーバーを実装：
+`cmd/server/main.go`でサーバーを実装します。
 
 ```go
 package main

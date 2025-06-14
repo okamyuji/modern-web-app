@@ -1,4 +1,15 @@
+---
+title: "Tailwind CSSによる効率的なスタイリング"
+---
+
 # 第5章 Tailwind CSSによる効率的なスタイリング
+
+ここでは以下のようなアプリケーションを作成します。
+
+![画面1](/images/05-00.png)
+![画面2](/images/05-01.png)
+![画面3](/images/05-02.png)
+![画面4](/images/05-03.png)
 
 ## 1. Tailwind CSSの本質的な理解
 
