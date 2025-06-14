@@ -8,6 +8,8 @@ title: "デプロイメントと運用"
 
 ![画面1](/images/10-00.png)
 
+この章のソースコードは[src/10-deployment](https://github.com/okamyuji/modern-web-app/tree/main/src/10-deployment)にあります。
+
 ## 1. 本番環境への準備
 
 ### ビルドとリリース戦略

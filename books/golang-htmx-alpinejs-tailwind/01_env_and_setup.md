@@ -8,6 +8,8 @@ title: "環境構築とプロジェクトセットアップ"
 
 ![画面](/images/01-00.png)
 
+この章のソースコードは[src/01-env-setup](https://github.com/okamyuji/modern-web-app/tree/main/src/01-env-setup)にあります。
+
 ## 1.1 技術スタックの概要
 
 本書では、以下の技術を組み合わせてモダンなWebアプリケーションを構築します。

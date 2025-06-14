@@ -8,6 +8,8 @@ title: "Golangの基礎と実践パターン"
 
 Goは2009年にGoogleによって開発された言語で、シンプルさとパフォーマンスを両立した設計が特徴です。Web開発において特に以下の利点があります。
 
+なお、この章のソースコードは[src/02-golang-patterns](https://github.com/okamyuji/modern-web-app/tree/main/src/02-golang-patterns)にあります。
+
 ### 2.1.1 シンプルな言語設計
 
 Goは意図的に機能を絞り込んでいます。複雑な継承や例外処理の代わりに、コンポジションとエラー値を使用します。

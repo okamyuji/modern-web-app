@@ -14,6 +14,8 @@ title: "HTMXによるインタラクティブなUI"
 ![画面6](/images/03-05.png)
 ![画面7](/images/03-06.png)
 
+この章のソースコードは[src/03-htmx](https://github.com/okamyuji/modern-web-app/tree/main/src/03-htmx)にあります。
+
 ## 3.1 HTMXの思想とアプローチ
 
 HTMXは「HTML本来の力を拡張する」という思想で設計されたライブラリです。従来のSPA（Single Page Application）が複雑なJavaScriptフレームワークを要求するのに対し、HTMXはHTML属性だけでモダンなUIを実現します。

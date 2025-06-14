@@ -14,6 +14,8 @@ title: "Alpine.jsによる状態管理とイベント処理"
 ![画面6](/images/04-05.png)
 ![画面7](/images/04-06.png)
 
+この章のソースコードは[src/04-alpinejs](https://github.com/okamyuji/modern-web-app/tree/main/src/04-alpinejs)にあります。
+
 ## 1. Alpine.jsの本質的な理解
 
 ### なぜAlpine.jsを選ぶのか

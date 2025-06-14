@@ -11,6 +11,8 @@ title: "Tailwind CSSによる効率的なスタイリング"
 ![画面3](/images/05-02.png)
 ![画面4](/images/05-03.png)
 
+この章のソースコードは[src/05-tailwind](https://github.com/okamyuji/modern-web-app/tree/main/src/05-tailwind)にあります。
+
 ## 1. Tailwind CSSの本質的な理解
 
 ### なぜTailwind CSSなのか

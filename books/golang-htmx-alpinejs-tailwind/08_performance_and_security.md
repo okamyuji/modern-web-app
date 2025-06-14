@@ -10,6 +10,8 @@ title: "パフォーマンス最適化とセキュリティ"
 ![画面2](/images/08-01.png)
 ![画面3](/images/08-02.png)
 
+この章のソースコードは[src/08-performance-security](https://github.com/okamyuji/modern-web-app/tree/main/src/08-performance-security)にあります。
+
 ## 1. パフォーマンス最適化の実践
 
 ### データベースの最適化

@@ -9,6 +9,8 @@ title: "実践アプリケーション開発(2) - チャットアプリケーシ
 ![画面1](/images/07-00.png)
 ![画面2](/images/07-01.png)
 
+この章のソースコードは[src/07-chat-app](https://github.com/okamyuji/modern-web-app/tree/main/src/07-chat-app)にあります。
+
 ## 1. リアルタイムアプリケーションの設計
 
 ### WebSocketとSSEの選択

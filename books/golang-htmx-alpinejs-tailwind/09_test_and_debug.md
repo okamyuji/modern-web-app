@@ -8,6 +8,8 @@ title: "テストとデバッグ"
 
 ![画面1](/images/09-00.png)
 
+この章のソースコードは[src/09-test-debug](https://github.com/okamyuji/modern-web-app/tree/main/src/09-test-debug)にあります。
+
 ## 1. 包括的なテスト戦略
 
 ### ユニットテストの実装
