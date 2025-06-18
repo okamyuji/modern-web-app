@@ -3,7 +3,7 @@ title: "【Python】Slackの特定ユーザーメッセージを効率的に取�
 emoji: "💬"
 type: "tech"
 topics: ["python", "slack", "api", "automation", "データ分析"]
-published: true
+published: false
 ---
 
 ## はじめに
