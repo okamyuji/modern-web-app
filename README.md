@@ -25,19 +25,17 @@
 
 ```text
 modern-web-app/
-├── README.md                    # このファイル
-├── src/
-│   ├── 01-env-setup/            # 環境セットアップ
-│   ├── 02-golang-patterns/      # Goパターン実装
-│   ├── 03-htmx/                 # HTMX統合
-│   ├── 04-alpinejs/             # Alpine.js実装
-│   ├── 05-tailwind/             # Tailwind CSS
-│   ├── 06-todo-app/             # Todoアプリケーション
-│   ├── 07-chat-app/             # チャットアプリケーション
-│   ├── 08-performance-security/ # パフォーマンス・セキュリティ
-│   ├── 09-test-debug/           # テスト・デバッグ
-│   └── 10-deployment/           # デプロイメント・運用
-└── books/                       # Zennの本
+├── README.md                # このファイル
+├── 01-env-setup/            # 環境セットアップ
+├── 02-golang-patterns/      # Goパターン実装
+├── 03-htmx/                 # HTMX統合
+├── 04-alpinejs/             # Alpine.js実装
+├── 05-tailwind/             # Tailwind CSS
+├── 06-todo-app/             # Todoアプリケーション
+├── 07-chat-app/             # チャットアプリケーション
+├── 08-performance-security/ # パフォーマンス・セキュリティ
+├── 09-test-debug/           # テスト・デバッグ
+└── 10-deployment/           # デプロイメント・運用
 ```
 
 ### 📁 各ディレクトリの役割
