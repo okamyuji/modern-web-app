@@ -407,7 +407,7 @@ func (h *APIHandler) SaveField(w http.ResponseWriter, r *http.Request) {
 				hx-trigger="click"
 				class="mt-1 p-2 border border-transparent rounded cursor-pointer hover:border-gray-300 hover:bg-gray-50">
 				%s <span class="text-xs text-gray-500">(クリックして編集)</span>
-			</div>`, url.QueryEscape(field), htmlpkg.EscapeString(value))
+			</div>`, htmlpkg.EscapeString(url.QueryEscape(field)), htmlpkg.EscapeString(value))
 	
 	fmt.Fprint(w, html)
 }
@@ -432,7 +432,7 @@ func (h *APIHandler) CancelEdit(w http.ResponseWriter, r *http.Request) {
 				hx-trigger="click"
 				class="mt-1 p-2 border border-transparent rounded cursor-pointer hover:border-gray-300 hover:bg-gray-50">
 				%s <span class="text-xs text-gray-500">(クリックして編集)</span>
-			</div>`, url.QueryEscape(field), originalValue)
+			</div>`, htmlpkg.EscapeString(url.QueryEscape(field)), originalValue)
 	
 	fmt.Fprint(w, html)
 }
