@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	htmlpkg "html"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -139,7 +141,7 @@ func (h *APIHandler) FormSubmit(w http.ResponseWriter, r *http.Request) {
 					<p><strong>メッセージ:</strong> %s</p>
 				</div>
 				<p class='text-xs text-green-600 mt-2'>送信時刻: %s</p>
-			</div>`, name, email, message, time.Now().Format("2006-01-02 15:04:05"))
+			</div>`, htmlpkg.EscapeString(name), htmlpkg.EscapeString(email), htmlpkg.EscapeString(message), time.Now().Format("2006-01-02 15:04:05"))
 	
 	fmt.Fprint(w, html)
 }
@@ -261,7 +263,7 @@ func (h *APIHandler) ValidateForm(w http.ResponseWriter, r *http.Request) {
 				<h4 class='font-bold text-green-700'>✅ 登録完了</h4>
 				<p class='text-sm mt-1'>ユーザー「%s」が正常に登録されました。</p>
 				<p class='text-xs text-green-600 mt-2'>登録時刻: %s</p>
-			</div>`, username, time.Now().Format("2006-01-02 15:04:05"))
+			</div>`, htmlpkg.EscapeString(username), time.Now().Format("2006-01-02 15:04:05"))
 	
 	fmt.Fprint(w, html)
 }
@@ -318,7 +320,7 @@ func (h *APIHandler) DynamicForm(w http.ResponseWriter, r *http.Request) {
 					<p><strong>タイトル:</strong> %s</p>
 				</div>
 				<p class='text-xs text-purple-600 mt-2'>作成時刻: %s</p>
-			</div>`, category, subcategory, title, time.Now().Format("2006-01-02 15:04:05"))
+			</div>`, htmlpkg.EscapeString(category), htmlpkg.EscapeString(subcategory), htmlpkg.EscapeString(title), time.Now().Format("2006-01-02 15:04:05"))
 	
 	fmt.Fprint(w, html)
 }
@@ -344,7 +346,7 @@ func (h *APIHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 					<p><strong>説明:</strong> %s</p>
 				</div>
 				<p class='text-xs text-red-600 mt-2'>アップロード時刻: %s</p>
-			</div>`, fileName, fileSize, description, time.Now().Format("2006-01-02 15:04:05"))
+			</div>`, fileName, fileSize, htmlpkg.EscapeString(description), time.Now().Format("2006-01-02 15:04:05"))
 	
 	fmt.Fprint(w, html)
 }
@@ -405,7 +407,7 @@ func (h *APIHandler) SaveField(w http.ResponseWriter, r *http.Request) {
 				hx-trigger="click"
 				class="mt-1 p-2 border border-transparent rounded cursor-pointer hover:border-gray-300 hover:bg-gray-50">
 				%s <span class="text-xs text-gray-500">(クリックして編集)</span>
-			</div>`, field, value)
+			</div>`, url.QueryEscape(field), htmlpkg.EscapeString(value))
 	
 	fmt.Fprint(w, html)
 }
@@ -430,7 +432,7 @@ func (h *APIHandler) CancelEdit(w http.ResponseWriter, r *http.Request) {
 				hx-trigger="click"
 				class="mt-1 p-2 border border-transparent rounded cursor-pointer hover:border-gray-300 hover:bg-gray-50">
 				%s <span class="text-xs text-gray-500">(クリックして編集)</span>
-			</div>`, field, originalValue)
+			</div>`, url.QueryEscape(field), originalValue)
 	
 	fmt.Fprint(w, html)
 }
@@ -496,7 +498,7 @@ func (h *APIHandler) BulkAction(w http.ResponseWriter, r *http.Request) {
 					<h4 class='font-bold text-green-700'>✅ 削除完了</h4>
 					<p class='text-sm mt-1'>%d個のアイテムが削除されました。</p>
 					<p class='text-xs text-green-600 mt-1'>削除されたアイテム: %s</p>
-				</div>`, len(selectedItems), strings.Join(selectedItems, ", "))
+				</div>`, len(selectedItems), htmlpkg.EscapeString(strings.Join(selectedItems, ", ")))
 		fmt.Fprint(w, html)
 	}
 }

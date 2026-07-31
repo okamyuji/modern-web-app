@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"net/http"
 	"runtime"
 	"runtime/debug"
@@ -112,8 +113,8 @@ func DebugPanel(isDev bool) func(http.Handler) http.Handler {
 				(memStatsAfter.Alloc-memStatsBefore.Alloc)/1024, 
 				drw.statusCode, 
 				runtime.NumGoroutine(),
-				r.URL.Path,
-				r.Method)
+				html.EscapeString(r.URL.Path),
+				html.EscapeString(r.Method))
 
 				// レスポンスボディに追加
 				body := drw.body.String()
@@ -177,14 +178,11 @@ func ErrorHandler(isDev bool) func(http.Handler) http.Handler {
 								<div class="ml-3">
 									<h3 class="text-lg font-bold">Error: %s</h3>
 									<p class="mt-1">%s</p>
-									<details class="mt-2">
-										<summary class="cursor-pointer text-sm font-medium">Stack Trace</summary>
-										<pre class="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">%s</pre>
-									</details>
+									<p class="mt-2 text-xs text-red-500">スタックトレースはサーバーログを参照してください。</p>
 								</div>
 							</div>
 						</div>
-						`, appErr.Code, appErr.Message, appErr.StackTrace)
+						`, appErr.Code, appErr.Message)
 					} else {
 						// 本番環境では一般的なメッセージ
 						fmt.Fprintf(w, `

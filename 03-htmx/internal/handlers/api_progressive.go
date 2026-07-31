@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	htmlpkg "html"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -263,7 +264,7 @@ func (h *APIHandler) SelectCity(w http.ResponseWriter, r *http.Request) {
 							<h4 class="font-bold text-green-700">選択された都市</h4>
 							<p class="text-sm mt-1">🏙️ %s</p>
 							<p class="text-xs text-green-600 mt-1">選択時刻: %s</p>
-						</div>`, city, time.Now().Format("15:04:05"))
+						</div>`, htmlpkg.EscapeString(city), time.Now().Format("15:04:05"))
 	
 	fmt.Fprint(w, html)
 }

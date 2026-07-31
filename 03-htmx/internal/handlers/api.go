@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	htmlpkg "html"
 	"htmx-demo/internal/models"
 	"net/http"
 	"strings"
@@ -136,7 +137,7 @@ func (h *APIHandler) Search(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	html := fmt.Sprintf("<p><strong>検索キーワード:</strong> %s</p>", query)
+	html := fmt.Sprintf("<p><strong>検索キーワード:</strong> %s</p>", htmlpkg.EscapeString(query))
 	if len(results) > 0 {
 		html += "<ul class='mt-2 space-y-1'>"
 		for _, result := range results {
