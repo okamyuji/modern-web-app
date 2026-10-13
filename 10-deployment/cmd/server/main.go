@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -340,8 +341,10 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 				http.Error(w, fmt.Sprintf("title is required and must be at most %d characters", maxTitleLength), http.StatusBadRequest)
 				return
 			}
+			// 列の DEFAULT は値を明示した INSERT には効かないので、ここで補う
+			todo.Priority = cmp.Or(todo.Priority, "medium")
 			// priority はメトリクスのラベルになるので、値の種類を限る
-			if !slices.Contains([]string{"", "low", "medium", "high"}, todo.Priority) {
+			if !slices.Contains([]string{"low", "medium", "high"}, todo.Priority) {
 				http.Error(w, "priority must be one of low, medium, high", http.StatusBadRequest)
 				return
 			}

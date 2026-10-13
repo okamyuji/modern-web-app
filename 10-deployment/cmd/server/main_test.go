@@ -210,6 +210,20 @@ func TestTodosAPI_ValidatesPriority(t *testing.T) {
 	}
 }
 
+func TestTodosAPI_DefaultsMissingPriorityToMedium(t *testing.T) {
+	h := newAPIHandler(newTestDB(t), testToken, 100)
+
+	created := doRequest(h, http.MethodPost, `{"title":"no priority"}`, testToken, "")
+	listed := doRequest(h, http.MethodGet, "", testToken, "")
+
+	if !strings.Contains(created.Body.String(), `"priority":"medium"`) {
+		t.Fatalf("POST body = %q, want priority medium", created.Body.String())
+	}
+	if !strings.Contains(listed.Body.String(), `"priority":"medium"`) {
+		t.Fatalf("GET body = %q, want stored priority medium", listed.Body.String())
+	}
+}
+
 func TestTodosAPI_RejectsUnsupportedMethod(t *testing.T) {
 	h := newAPIHandler(newTestDB(t), testToken, 100)
 
