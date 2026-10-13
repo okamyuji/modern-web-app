@@ -120,12 +120,15 @@ func (r *TodoRepository) List(filter string, sortBy string) ([]*Todo, error) {
 	var whereClause string
 
 	if filter != "" {
+		pattern := "%" + filter + "%"
 		if r.driver == "postgres" {
 			whereClause = " WHERE title LIKE $1 OR description LIKE $1"
+			args = append(args, pattern)
 		} else {
+			// ? は出現ごとに値を 1 つ取るので、$1 と違い同じ値を 2 回渡す
 			whereClause = " WHERE title LIKE ? OR description LIKE ?"
+			args = append(args, pattern, pattern)
 		}
-		args = append(args, "%"+filter+"%")
 	}
 
 	orderBy := " ORDER BY created_at DESC"

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -12,12 +13,12 @@ import (
 
 type Config struct {
 	// アプリケーション設定
-	AppName    string
-	Port       string
-	Env        string
-	Version    string
-	BuildTime  string
-	DebugMode  bool
+	AppName   string
+	Port      string
+	Env       string
+	Version   string
+	BuildTime string
+	DebugMode bool
 
 	// サーバー設定
 	ReadTimeout     time.Duration
@@ -71,13 +72,15 @@ type Config struct {
 	// その他
 	EnableSwagger bool
 	APIRateLimit  int
+	APIToken      string
 	CORSEnabled   bool
 }
 
 func Load() (*Config, error) {
 	// 環境に応じて.envファイルを読み込み
-	env := getEnv("ENV", "development")
-	
+	// 未設定や空の ENV を開発扱いにすると、認証なしの API と既定の秘密値で起動してしまう
+	env := getEnv("ENV", "production")
+
 	envFiles := []string{
 		fmt.Sprintf(".env.%s.local", env),
 		fmt.Sprintf(".env.%s", env),
@@ -92,6 +95,8 @@ func Load() (*Config, error) {
 			break
 		}
 	}
+	// .env 系のファイルに書いた ENV も有効にする。godotenv は既存の環境変数を上書きしないので、プロセスの値が優先される
+	env = getEnv("ENV", "production")
 
 	config := &Config{
 		// アプリケーション設定
@@ -154,6 +159,7 @@ func Load() (*Config, error) {
 		// その他
 		EnableSwagger: getBool("ENABLE_SWAGGER", env == "development"),
 		APIRateLimit:  getInt("API_RATE_LIMIT", 100),
+		APIToken:      getEnv("API_TOKEN", ""),
 		CORSEnabled:   getBool("CORS_ENABLED", true),
 	}
 
@@ -165,44 +171,34 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
+const minAPITokenLength = 32
 
 func (c *Config) IsProduction() bool {
 	return c.Env == "production"
+}
+
+func (c *Config) allowsUnauthenticatedAPI() bool {
+	return c.Env == "development" || c.IsTesting()
 }
 
 func (c *Config) IsTesting() bool {
 	return c.Env == "test" || c.Env == "testing"
 }
 
-func (c *Config) GetDatabaseDriver() string {
-	if strings.HasPrefix(c.DatabaseURL, "postgres://") {
-		return "postgres"
-	}
-	return "sqlite3"
-}
-
 func (c *Config) Validate() error {
 	var errors []string
 
-	// 本番環境での必須チェック
-	if c.IsProduction() {
-		if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
-			errors = append(errors, "SESSION_SECRET must be changed in production")
-		}
-		if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
-			errors = append(errors, "CSRF_SECRET must be changed in production")
-		}
-		if c.LogLevel == "debug" {
-			errors = append(errors, "LOG_LEVEL should not be 'debug' in production")
-		}
-		if c.DebugMode {
-			errors = append(errors, "debug mode should be disabled in production")
-		}
+	// 書き間違いの ENV では本番専用の検査が黙って外れるので、知らない値は拒否する
+	if !slices.Contains([]string{"development", "test", "testing", "staging", "production"}, c.Env) {
+		errors = append(errors, "ENV must be one of development, test, testing, staging, production")
+	}
 
-		// TLS証明書の確認
-		if c.TLSEnabled && (c.TLSCertFile == "" || c.TLSKeyFile == "") {
-			errors = append(errors, "TLS_CERT_FILE and TLS_KEY_FILE are required when TLS is enabled")
-		}
+	// 許可する環境を列挙し、staging や ENV の書き間違いでは認証なしの API や既定の秘密値で起動しない
+	if !c.allowsUnauthenticatedAPI() {
+		errors = append(errors, c.validateDeployed()...)
+	}
+	if c.IsProduction() {
+		errors = append(errors, c.validateProduction()...)
 	}
 
 	// ポート番号の妥当性確認
@@ -213,6 +209,10 @@ func (c *Config) Validate() error {
 	// データベースURL形式確認
 	if c.DatabaseURL == "" {
 		errors = append(errors, "DATABASE_URL is required")
+	}
+
+	if c.APIRateLimit < 1 {
+		errors = append(errors, "API_RATE_LIMIT must be at least 1")
 	}
 
 	// セキュリティ設定の確認
@@ -230,8 +230,41 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// validateDeployed development と test 以外のすべての環境で必須の設定を検査する
+func (c *Config) validateDeployed() []string {
+	var errors []string
+	if len(c.APIToken) < minAPITokenLength {
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters unless ENV is development, test, or testing", minAPITokenLength))
+	}
+	if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
+		errors = append(errors, "SESSION_SECRET must be changed unless ENV is development, test, or testing")
+	}
+	if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
+		errors = append(errors, "CSRF_SECRET must be changed unless ENV is development, test, or testing")
+	}
+	return errors
+}
+
+// validateProduction 本番環境だけで必須の設定を検査する
+func (c *Config) validateProduction() []string {
+	var errors []string
+	if c.LogLevel == "debug" {
+		errors = append(errors, "LOG_LEVEL should not be 'debug' in production")
+	}
+	if c.DebugMode {
+		errors = append(errors, "debug mode should be disabled in production")
+	}
+
+	// TLS証明書の確認
+	if c.TLSEnabled && (c.TLSCertFile == "" || c.TLSKeyFile == "") {
+		errors = append(errors, "TLS_CERT_FILE and TLS_KEY_FILE are required when TLS is enabled")
+	}
+
+	return errors
+}
+
 func (c *Config) String() string {
-	return fmt.Sprintf("Config{AppName: %s, Env: %s, Version: %s, Port: %s}", 
+	return fmt.Sprintf("Config{AppName: %s, Env: %s, Version: %s, Port: %s}",
 		c.AppName, c.Env, c.Version, c.Port)
 }
 

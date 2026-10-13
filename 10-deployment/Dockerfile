@@ -1,5 +1,5 @@
 # マルチステージビルド
-FROM golang:1.24.3-alpine AS builder
+FROM golang:1.27-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS builder
 
 # 必要なツールのインストール
 RUN apk add --no-cache \
@@ -7,7 +7,9 @@ RUN apk add --no-cache \
     nodejs \
     npm \
     make \
-    curl
+    curl \
+    gcc \
+    musl-dev
 
 WORKDIR /app
 
@@ -17,7 +19,7 @@ RUN go mod download
 
 # Node.jsの依存関係のキャッシュ
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # ソースコードのコピー
 COPY . .
@@ -26,20 +28,17 @@ COPY . .
 ARG VERSION=dev
 ARG BUILD_TIME=unknown
 
-# Templテンプレートの生成
-RUN go install github.com/a-h/templ@latest
-RUN templ generate
-
 # Tailwind CSSのビルド
-RUN npm run build:css || echo "npm script not found, skipping CSS build"
+RUN npm run build:css
 
-# Goアプリケーションのビルド
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+# Goアプリケーションのビルド（go-sqlite3 は cgo 必須）
+RUN CGO_ENABLED=1 go build \
     -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -s -w" \
     -o server ./cmd/server
 
 # 実行用の軽量イメージ
-FROM alpine:3.19
+# cgo バイナリが musl に動的リンクするため builder と同じ Alpine 版にそろえる
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 
 # セキュリティアップデートとタイムゾーンデータ
 RUN apk --no-cache add \
@@ -53,17 +52,12 @@ RUN addgroup -g 1000 -S appgroup && \
 
 WORKDIR /app
 
-# 必要なディレクトリの作成
-RUN mkdir -p static logs && \
-    chown -R appuser:appgroup /app
+# 実行ユーザーが書き込めるのはデータとログだけにし、バイナリと静的ファイルは root 所有のままにする
+RUN mkdir -p data logs && \
+    chown appuser:appgroup data logs
 
-# 必要なファイルのコピー
-COPY --from=builder --chown=appuser:appgroup /app/server ./
-COPY --from=builder --chown=appuser:appgroup /app/internal/templates ./internal/templates
-COPY --from=builder --chown=appuser:appgroup /app/static ./static
-
-# 実行権限の設定
-RUN chmod +x ./server
+COPY --from=builder /app/server ./
+COPY --from=builder /app/static ./static
 
 # 実行ユーザーの切り替え
 USER appuser
@@ -72,10 +66,11 @@ USER appuser
 ENV ENV=production
 ENV PORT=8080
 ENV LOG_LEVEL=info
+ENV DATABASE_URL=sqlite:///app/data/deployment_demo.db
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD ["/app/server", "-health-check"] || exit 1
+    CMD ["/app/server", "-health-check"]
 
 # ポートの公開
 EXPOSE 8080
@@ -84,6 +79,7 @@ EXPOSE 8080
 ENTRYPOINT ["/app/server"]
 
 # メタデータラベル
+ARG VERSION=dev
 LABEL maintainer="deployment-demo"
 LABEL version="${VERSION}"
 LABEL description="Modern Web App with Go/HTMX/Alpine.js/Tailwind CSS"

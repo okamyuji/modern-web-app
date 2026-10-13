@@ -1,12 +1,17 @@
 package main
 
 import (
+	"cmp"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"slices"
+	"strings"
+	"unicode/utf8"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -97,7 +102,13 @@ func main() {
 }
 
 func initDatabase(databaseURL string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./deployment_demo.db")
+	path, ok := strings.CutPrefix(databaseURL, "sqlite://")
+	// 空のパスは SQLite では一時 DB になり、接続を閉じるとデータが消える
+	if !ok || path == "" {
+		// URL は資格情報を含みうるので、ログに出るエラーへ載せない
+		return nil, errors.New("未対応のDATABASE_URLです（sqlite://のみ対応）")
+	}
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, fmt.Errorf("データベース接続に失敗: %w", err)
 	}
@@ -163,8 +174,9 @@ func setupRoutes(db *sql.DB, cfg *config.Config) http.Handler {
 	})
 
 	// Todo API
-	mux.HandleFunc("/api/todos", handleTodos(db))
-	mux.HandleFunc("/api/todos/", handleTodoByID(db))
+	api := newAPIHandler(db, cfg.APIToken, cfg.APIRateLimit)
+	mux.Handle("/api/todos", api)
+	mux.Handle("/api/todos/", api)
 
 	// メインページ
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +318,8 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			todos, err := getTodos(db)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("Todo一覧の取得に失敗: %v", err)
+				http.Error(w, internalErrorMessage, http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -314,14 +327,32 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			var todo Todo
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 			if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+					return
+				}
 				http.Error(w, "Invalid JSON", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(todo.Title) == "" || utf8.RuneCountInString(todo.Title) > maxTitleLength {
+				http.Error(w, fmt.Sprintf("title is required and must be at most %d characters", maxTitleLength), http.StatusBadRequest)
+				return
+			}
+			// 列の DEFAULT は値を明示した INSERT には効かないので、ここで補う
+			todo.Priority = cmp.Or(todo.Priority, "medium")
+			// priority はメトリクスのラベルになるので、値の種類を限る
+			if !slices.Contains([]string{"low", "medium", "high"}, todo.Priority) {
+				http.Error(w, "priority must be one of low, medium, high", http.StatusBadRequest)
 				return
 			}
 
 			id, err := createTodo(db, todo)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("Todoの作成に失敗: %v", err)
+				http.Error(w, internalErrorMessage, http.StatusInternalServerError)
 				return
 			}
 
