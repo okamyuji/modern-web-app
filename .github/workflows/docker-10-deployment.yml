@@ -35,8 +35,6 @@ jobs:
       - name: Run container
         run: |
           docker run -d --name app -p 8080:8080 \
-            -e SESSION_SECRET="$(openssl rand -hex 32)" \
-            -e CSRF_SECRET="$(openssl rand -hex 16)" \
             -e API_TOKEN="$API_TOKEN" \
             deployment-demo:ci
 

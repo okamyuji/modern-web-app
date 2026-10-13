@@ -34,7 +34,7 @@
 
 - 環境別設定 開発、ステージング、本番の各環境で設定を分けます。
 - 設定バリデーション 起動時に、本番環境で必須の設定がそろっているかを検証します。
-- シークレット管理 セッションとCSRFの秘密値を環境変数から受け取り、本番環境では既定値のままの起動を拒否します。
+- シークレット管理 `API_TOKEN`を環境変数から受け取ります。`ENV`が`development`、`test`、`testing`以外のとき、32バイト未満だと起動しません。
 - 12-Factor Appの方針 設定を環境変数で受け取るので、アプリケーションを別の実行環境へ移しやすくなります。
 
 ### コンテナ化
@@ -193,9 +193,11 @@ curl -H "Authorization: Bearer $API_TOKEN" http://localhost:8080/api/todos
 # メトリクス（JSON形式）
 curl http://localhost:8080/metrics
 
-# Prometheusメトリクス
+# Prometheusメトリクス（既定ではアプリと同じホストからだけ取得できます）
 curl http://localhost:9090/metrics
 ```
+
+Prometheusメトリクスのサーバーは、既定で`127.0.0.1`だけで待ち受けます。別のホストやコンテナのPrometheusから取得するときは、`PROMETHEUS_HOST=0.0.0.0`を設定します。このエンドポイントには認証がないので、開くときはファイアウォールなどで取得元を限ってください。`0.0.0.0`ではIPv4とIPv6の両方で待ち受けるので、IPv6の規則も設定します。
 
 ## 設定管理
 
@@ -208,16 +210,17 @@ curl http://localhost:9090/metrics
 ```bash
 APP_NAME=deployment-demo
 ENV=development              # development, test, testing, staging, production
+LISTEN_HOST=                 # 空なら、development、test、testingでは127.0.0.1、それ以外では全インターフェース
 PORT=8080
 VERSION=v1.0.0
 ```
 
+`ENV`が`development`、`test`、`testing`のときに`LISTEN_HOST`をループバック以外にすると、同じネットワークの端末からTodo APIに届きます。Hostヘッダーを確かめる仕組みはDNS rebinding対策なので、ネットワーク越しに届く要求は止めません。外へ開くときは`API_TOKEN`を設定してください。
+
 #### セキュリティ設定
 
 ```bash
-SESSION_SECRET=<64文字のランダム文字列>
-CSRF_SECRET=<32文字のランダム文字列>
-API_TOKEN=<32文字以上のランダム文字列>
+API_TOKEN=<32バイト以上のランダム文字列>  # 例: openssl rand -hex 32
 API_RATE_LIMIT=100           # クライアントIPごとの1分あたりの要求数
 TLS_ENABLED=false
 ```
@@ -234,6 +237,7 @@ DB_MAX_IDLE_CONNS=5
 
 ```bash
 PROMETHEUS_ENABLED=true
+PROMETHEUS_HOST=127.0.0.1     # 別ホストから取得するときだけ0.0.0.0
 PROMETHEUS_PORT=9090
 LOG_LEVEL=info
 ```
@@ -251,9 +255,7 @@ LOG_LEVEL=info
 
 本番環境では、次の設定を必ず見直してください。
 
-- `SESSION_SECRET`: デフォルト値から変更必須（`ENV`が`development`、`test`、`testing`以外のとき）
-- `CSRF_SECRET`: デフォルト値から変更必須（同上）
-- `API_TOKEN`: 32文字以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
+- `API_TOKEN`: 32バイト以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
 - `ENV`: プロセスの環境変数の値が、`.env`系のファイルの値より優先されます。どちらにも指定がないときは`production`として扱います。使える値は`development`、`test`、`testing`、`staging`、`production`で、ほかの値では起動しません
 - `LOG_LEVEL`: `debug`以外を推奨
 - `TLS_ENABLED=true`: HTTPS環境での運用推奨
@@ -333,8 +335,8 @@ FROM alpine:3.24
 # イメージビルド
 make docker-build
 
-# コンテナ実行（本番モードで起動するため秘密値が必要。DBは名前付きボリュームdeployment-demo-dataに保存）
-SESSION_SECRET=<64文字のランダム文字列> CSRF_SECRET=<32文字のランダム文字列> API_TOKEN=<32文字以上のランダム文字列> make docker-run
+# コンテナ実行（本番モードで起動するためAPI_TOKENが必要。DBは名前付きボリュームdeployment-demo-dataに保存）
+API_TOKEN=<32バイト以上のランダム文字列> make docker-run
 
 # イメージのプッシュ
 make docker-push
@@ -397,17 +399,37 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 ### 3. グレースフルシャットダウン
 
 ```go
-func GracefulShutdown(server *http.Server, cfg *config.Config, cleanup func()) {
-    quit := make(chan os.Signal, 1)
-    signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-    <-quit
-    
-    ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-    defer cancel()
-    
-    server.Shutdown(ctx)
+func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signal, timeout time.Duration, cleanup func()) error {
+    serveDone := make(chan struct{})
+    done := make(chan struct{})
+    go func() {
+        defer close(done)
+        select {
+        case <-quit:
+        case <-serveDone:
+            return
+        }
+        ctx, cancel := context.WithTimeout(context.Background(), timeout)
+        defer cancel()
+        if err := server.Shutdown(ctx); err != nil {
+            server.Close()
+        }
+        if cleanup != nil {
+            cleanup()
+        }
+    }()
+
+    err := server.Serve(ln)
+    close(serveDone)
+    <-done
+    if errors.Is(err, http.ErrServerClosed) {
+        return nil
+    }
+    return err
 }
 ```
+
+`Shutdown`を呼ぶと`Serve`はすぐに戻るので、処理中の要求と`cleanup`の完了を`done`で待ってから戻ります。シグナルが来ないまま`Serve`が終わったときに停止用のゴルーチンを抜けさせるのが、`serveDone`の役目です。
 
 #### 実装のポイント
 
@@ -492,9 +514,9 @@ tail -f logs/deploy.log
 
 ### 実装済みセキュリティ機能
 
-- CSRF保護
-- XSS防止（Content Security Policy）
-- セキュアヘッダーの設定
+- Todo APIのBearerトークン認証（Cookieを使わないので、トークンを設定した環境ではCSRFの対象になりません）
+- Todo作成時の`Content-Type: application/json`の必須化（トークンを設定しない開発環境でも、他サイトのページからTodoを作れません）
+- Todo APIのDNS rebinding対策（トークンを設定しないときは、`/api/todos`がHostヘッダーが`localhost`かループバックアドレスの要求だけを受け付けます）
 - 入力値検証
 - SQLインジェクション対策
 
@@ -552,7 +574,7 @@ tail -f logs/deploy.log
 
 - ドキュメント このREADMEファイルです。
 - ログ `logs/`ディレクトリにログファイルを出力します。
-- メトリクス `http://localhost:9090/metrics`で取得できます。
+- メトリクス アプリと同じホストから`http://localhost:9090/metrics`で取得できます。
 - ヘルスチェック `http://localhost:8080/health`で確認できます。
 
 ---

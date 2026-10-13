@@ -7,10 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"mime"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"slices"
 	"strings"
+	"syscall"
+	"time"
 	"unicode/utf8"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -42,8 +47,12 @@ type HealthResponse struct {
 func main() {
 	// ヘルスチェックモード
 	if len(os.Args) > 1 && os.Args[1] == "-health-check" {
-		resp, err := http.Get("http://localhost:8080/health")
-		if err != nil || resp.StatusCode != http.StatusOK {
+		// サーバーと同じ設定を読み、LISTEN_HOST と PORT から宛先を決める
+		cfg, err := config.Load()
+		if err != nil {
+			os.Exit(1)
+		}
+		if err := checkHealth(cfg.HealthCheckURL(), 5*time.Second); err != nil {
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -69,8 +78,11 @@ func main() {
 
 	// Prometheusメトリクスサーバーの起動
 	if cfg.PrometheusEnabled {
-		monitoring.StartMetricsServer(cfg.PrometheusPort)
-		log.Printf("Prometheusメトリクスサーバーが起動しました: http://localhost:%s/metrics", cfg.PrometheusPort)
+		addr, err := monitoring.StartMetricsServer(cfg.PrometheusAddr(), cfg.IdleTimeout)
+		if err != nil {
+			log.Fatalf("Prometheusメトリクスサーバーの起動に失敗しました: %v", err)
+		}
+		log.Printf("Prometheusメトリクスサーバーが起動しました: http://%s/metrics", addr)
 	}
 
 	// ルーターの設定
@@ -78,27 +90,44 @@ func main() {
 
 	// HTTPサーバーの設定
 	server := &http.Server{
-		Addr:         ":" + cfg.Port,
+		Addr:         cfg.ServerAddr(),
 		Handler:      mux,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 
-	log.Printf("サーバーが起動しました: http://localhost:%s", cfg.Port)
+	// 待ち受けに成功してから起動ログを出すため、Listen は Serve と分けて呼ぶ
+	ln, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		log.Fatalf("サーバーの起動に失敗しました: %v", err)
+	}
+	log.Printf("サーバーが起動しました: http://%s", ln.Addr())
 
-	// グレースフルシャットダウンの設定
-	go monitoring.GracefulShutdown(server, cfg, func() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	if err := monitoring.ServeUntilSignal(server, ln, quit, cfg.ShutdownTimeout, func() {
 		log.Println("データベース接続を閉じています...")
 		db.Close()
-	})
-
-	// サーバー起動
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("サーバーの起動に失敗しました: %v", err)
+	}); err != nil {
+		log.Fatalf("サーバーが異常終了しました: %v", err)
 	}
 
 	log.Println("サーバーが正常に停止しました")
+}
+
+// checkHealth url が timeout 以内に 200 を返さなければエラーを返す
+func checkHealth(url string, timeout time.Duration) error {
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health check returned %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func initDatabase(databaseURL string) (*sql.DB, error) {
@@ -326,6 +355,11 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(todos)
 
 		case http.MethodPost:
+			// text/plain などの単純リクエストはプリフライトなしで他サイトから送れるので、JSON 以外は受け付けない
+			if mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mediaType != "application/json" {
+				http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+				return
+			}
 			var todo Todo
 			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 			if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {

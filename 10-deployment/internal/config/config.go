@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/netip"
 	"os"
 	"slices"
 	"strconv"
@@ -13,12 +15,13 @@ import (
 
 type Config struct {
 	// アプリケーション設定
-	AppName   string
-	Port      string
-	Env       string
-	Version   string
-	BuildTime string
-	DebugMode bool
+	AppName    string
+	ListenHost string
+	Port       string
+	Env        string
+	Version    string
+	BuildTime  string
+	DebugMode  bool
 
 	// サーバー設定
 	ReadTimeout     time.Duration
@@ -33,8 +36,6 @@ type Config struct {
 	ConnMaxLifetime time.Duration
 
 	// セキュリティ設定
-	SessionSecret  string
-	CSRFSecret     string
 	AllowedOrigins []string
 	TLSEnabled     bool
 	TLSCertFile    string
@@ -55,6 +56,7 @@ type Config struct {
 	LogLevel          string
 	SentryDSN         string
 	PrometheusEnabled bool
+	PrometheusHost    string
 	PrometheusPort    string
 
 	// 外部サービス設定
@@ -100,12 +102,13 @@ func Load() (*Config, error) {
 
 	config := &Config{
 		// アプリケーション設定
-		AppName:   getEnv("APP_NAME", "deployment-demo"),
-		Port:      getEnv("PORT", "8080"),
-		Env:       env,
-		Version:   getEnv("VERSION", "dev"),
-		BuildTime: getEnv("BUILD_TIME", "unknown"),
-		DebugMode: env == "development",
+		AppName:    getEnv("APP_NAME", "deployment-demo"),
+		ListenHost: getEnv("LISTEN_HOST", ""),
+		Port:       getEnv("PORT", "8080"),
+		Env:        env,
+		Version:    getEnv("VERSION", "dev"),
+		BuildTime:  getEnv("BUILD_TIME", "unknown"),
+		DebugMode:  env == "development",
 
 		// サーバー設定
 		ReadTimeout:     getDuration("READ_TIMEOUT", 10*time.Second),
@@ -120,8 +123,6 @@ func Load() (*Config, error) {
 		ConnMaxLifetime: getDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
 
 		// セキュリティ設定
-		SessionSecret:  getEnvRequired("SESSION_SECRET", "SESSION_SECRET is required"),
-		CSRFSecret:     getEnvRequired("CSRF_SECRET", "CSRF_SECRET is required"),
 		AllowedOrigins: getEnvSlice("ALLOWED_ORIGINS", []string{"http://localhost:8080"}),
 		TLSEnabled:     getBool("TLS_ENABLED", false),
 		TLSCertFile:    getEnv("TLS_CERT_FILE", ""),
@@ -142,6 +143,7 @@ func Load() (*Config, error) {
 		LogLevel:          getEnv("LOG_LEVEL", "info"),
 		SentryDSN:         getEnv("SENTRY_DSN", ""),
 		PrometheusEnabled: getBool("PROMETHEUS_ENABLED", true),
+		PrometheusHost:    getEnv("PROMETHEUS_HOST", "127.0.0.1"),
 		PrometheusPort:    getEnv("PROMETHEUS_PORT", "9090"),
 
 		// 外部サービス設定
@@ -161,6 +163,11 @@ func Load() (*Config, error) {
 		APIRateLimit:  getInt("API_RATE_LIMIT", 100),
 		APIToken:      getEnv("API_TOKEN", ""),
 		CORSEnabled:   getBool("CORS_ENABLED", true),
+	}
+
+	// 認証なしの API を許す環境では、同じ LAN の端末から届かないようループバックだけで待ち受ける
+	if config.ListenHost == "" && config.allowsUnauthenticatedAPI() {
+		config.ListenHost = "127.0.0.1"
 	}
 
 	// 設定の検証
@@ -215,14 +222,6 @@ func (c *Config) Validate() error {
 		errors = append(errors, "API_RATE_LIMIT must be at least 1")
 	}
 
-	// セキュリティ設定の確認
-	if len(c.SessionSecret) < 32 {
-		errors = append(errors, "SESSION_SECRET must be at least 32 characters")
-	}
-	if len(c.CSRFSecret) < 16 {
-		errors = append(errors, "CSRF_SECRET must be at least 16 characters")
-	}
-
 	if len(errors) > 0 {
 		return fmt.Errorf("validation errors: %s", strings.Join(errors, "; "))
 	}
@@ -234,13 +233,7 @@ func (c *Config) Validate() error {
 func (c *Config) validateDeployed() []string {
 	var errors []string
 	if len(c.APIToken) < minAPITokenLength {
-		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters unless ENV is development, test, or testing", minAPITokenLength))
-	}
-	if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
-		errors = append(errors, "SESSION_SECRET must be changed unless ENV is development, test, or testing")
-	}
-	if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
-		errors = append(errors, "CSRF_SECRET must be changed unless ENV is development, test, or testing")
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d bytes unless ENV is development, test, or testing", minAPITokenLength))
 	}
 	return errors
 }
@@ -263,6 +256,25 @@ func (c *Config) validateProduction() []string {
 	return errors
 }
 
+// ServerAddr メインサーバーの待ち受けアドレスを返す。ListenHost が空なら全インターフェースで待ち受ける
+func (c *Config) ServerAddr() string {
+	return net.JoinHostPort(c.ListenHost, c.Port)
+}
+
+// HealthCheckURL 自分の /health を呼ぶ URL を返す。全インターフェースで待ち受けるときはループバックに送る
+func (c *Config) HealthCheckURL() string {
+	host := c.ListenHost
+	if addr, err := netip.ParseAddr(host); host == "" || (err == nil && addr.IsUnspecified()) {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, c.Port) + "/health"
+}
+
+// PrometheusAddr メトリクスサーバーの待ち受けアドレスを返す
+func (c *Config) PrometheusAddr() string {
+	return net.JoinHostPort(c.PrometheusHost, c.PrometheusPort)
+}
+
 func (c *Config) String() string {
 	return fmt.Sprintf("Config{AppName: %s, Env: %s, Version: %s, Port: %s}",
 		c.AppName, c.Env, c.Version, c.Port)
@@ -274,22 +286,6 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-
-func getEnvRequired(key string, _ string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		// デフォルト値を開発環境用に設定
-		switch key {
-		case "SESSION_SECRET":
-			return "change-this-in-production-please-use-random-64-chars"
-		case "CSRF_SECRET":
-			return "change-this-csrf-secret-in-production-use-random-32-chars"
-		default:
-			return ""
-		}
-	}
-	return value
 }
 
 func getInt(key string, defaultValue int) int {
