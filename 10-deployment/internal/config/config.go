@@ -12,12 +12,12 @@ import (
 
 type Config struct {
 	// アプリケーション設定
-	AppName    string
-	Port       string
-	Env        string
-	Version    string
-	BuildTime  string
-	DebugMode  bool
+	AppName   string
+	Port      string
+	Env       string
+	Version   string
+	BuildTime string
+	DebugMode bool
 
 	// サーバー設定
 	ReadTimeout     time.Duration
@@ -71,13 +71,14 @@ type Config struct {
 	// その他
 	EnableSwagger bool
 	APIRateLimit  int
+	APIToken      string
 	CORSEnabled   bool
 }
 
 func Load() (*Config, error) {
 	// 環境に応じて.envファイルを読み込み
 	env := getEnv("ENV", "development")
-	
+
 	envFiles := []string{
 		fmt.Sprintf(".env.%s.local", env),
 		fmt.Sprintf(".env.%s", env),
@@ -154,6 +155,7 @@ func Load() (*Config, error) {
 		// その他
 		EnableSwagger: getBool("ENABLE_SWAGGER", env == "development"),
 		APIRateLimit:  getInt("API_RATE_LIMIT", 100),
+		APIToken:      getEnv("API_TOKEN", ""),
 		CORSEnabled:   getBool("CORS_ENABLED", true),
 	}
 
@@ -165,6 +167,7 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
+const minAPITokenLength = 32
 
 func (c *Config) IsProduction() bool {
 	return c.Env == "production"
@@ -184,25 +187,8 @@ func (c *Config) GetDatabaseDriver() string {
 func (c *Config) Validate() error {
 	var errors []string
 
-	// 本番環境での必須チェック
 	if c.IsProduction() {
-		if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
-			errors = append(errors, "SESSION_SECRET must be changed in production")
-		}
-		if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
-			errors = append(errors, "CSRF_SECRET must be changed in production")
-		}
-		if c.LogLevel == "debug" {
-			errors = append(errors, "LOG_LEVEL should not be 'debug' in production")
-		}
-		if c.DebugMode {
-			errors = append(errors, "debug mode should be disabled in production")
-		}
-
-		// TLS証明書の確認
-		if c.TLSEnabled && (c.TLSCertFile == "" || c.TLSKeyFile == "") {
-			errors = append(errors, "TLS_CERT_FILE and TLS_KEY_FILE are required when TLS is enabled")
-		}
+		errors = append(errors, c.validateProduction()...)
 	}
 
 	// ポート番号の妥当性確認
@@ -213,6 +199,10 @@ func (c *Config) Validate() error {
 	// データベースURL形式確認
 	if c.DatabaseURL == "" {
 		errors = append(errors, "DATABASE_URL is required")
+	}
+
+	if c.APIRateLimit < 1 {
+		errors = append(errors, "API_RATE_LIMIT must be at least 1")
 	}
 
 	// セキュリティ設定の確認
@@ -230,8 +220,35 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// validateProduction 本番環境だけで必須の設定を検査する
+func (c *Config) validateProduction() []string {
+	var errors []string
+	if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
+		errors = append(errors, "SESSION_SECRET must be changed in production")
+	}
+	if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
+		errors = append(errors, "CSRF_SECRET must be changed in production")
+	}
+	if c.LogLevel == "debug" {
+		errors = append(errors, "LOG_LEVEL should not be 'debug' in production")
+	}
+	if c.DebugMode {
+		errors = append(errors, "debug mode should be disabled in production")
+	}
+	if len(c.APIToken) < minAPITokenLength {
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters in production", minAPITokenLength))
+	}
+
+	// TLS証明書の確認
+	if c.TLSEnabled && (c.TLSCertFile == "" || c.TLSKeyFile == "") {
+		errors = append(errors, "TLS_CERT_FILE and TLS_KEY_FILE are required when TLS is enabled")
+	}
+
+	return errors
+}
+
 func (c *Config) String() string {
-	return fmt.Sprintf("Config{AppName: %s, Env: %s, Version: %s, Port: %s}", 
+	return fmt.Sprintf("Config{AppName: %s, Env: %s, Version: %s, Port: %s}",
 		c.AppName, c.Env, c.Version, c.Port)
 }
 

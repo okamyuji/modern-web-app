@@ -3,10 +3,13 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"unicode/utf8"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -97,7 +100,11 @@ func main() {
 }
 
 func initDatabase(databaseURL string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./deployment_demo.db")
+	path, ok := strings.CutPrefix(databaseURL, "sqlite://")
+	if !ok {
+		return nil, fmt.Errorf("未対応のDATABASE_URLです（sqlite://のみ対応）: %s", databaseURL)
+	}
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, fmt.Errorf("データベース接続に失敗: %w", err)
 	}
@@ -163,8 +170,9 @@ func setupRoutes(db *sql.DB, cfg *config.Config) http.Handler {
 	})
 
 	// Todo API
-	mux.HandleFunc("/api/todos", handleTodos(db))
-	mux.HandleFunc("/api/todos/", handleTodoByID(db))
+	api := newAPIHandler(db, cfg.APIToken, cfg.APIRateLimit)
+	mux.Handle("/api/todos", api)
+	mux.Handle("/api/todos/", api)
 
 	// メインページ
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +314,8 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			todos, err := getTodos(db)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("Todo一覧の取得に失敗: %v", err)
+				http.Error(w, internalErrorMessage, http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -314,14 +323,25 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			var todo Todo
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 			if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+					return
+				}
 				http.Error(w, "Invalid JSON", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(todo.Title) == "" || utf8.RuneCountInString(todo.Title) > maxTitleLength {
+				http.Error(w, fmt.Sprintf("title is required and must be at most %d characters", maxTitleLength), http.StatusBadRequest)
 				return
 			}
 
 			id, err := createTodo(db, todo)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("Todoの作成に失敗: %v", err)
+				http.Error(w, internalErrorMessage, http.StatusInternalServerError)
 				return
 			}
 

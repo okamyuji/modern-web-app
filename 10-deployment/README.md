@@ -187,6 +187,9 @@ DEPLOY_STRATEGY=rolling ./scripts/deploy.sh v1.0.0 production
 # ヘルスチェック
 curl http://localhost:8080/health
 
+# Todo API（API_TOKEN を設定したときは Bearer トークンが必要）
+curl -H "Authorization: Bearer $API_TOKEN" http://localhost:8080/api/todos
+
 # メトリクス（JSON形式）
 curl http://localhost:8080/metrics
 
@@ -214,6 +217,8 @@ VERSION=v1.0.0
 ```bash
 SESSION_SECRET=<64文字のランダム文字列>
 CSRF_SECRET=<32文字のランダム文字列>
+API_TOKEN=<32文字以上のランダム文字列>
+API_RATE_LIMIT=100           # クライアントIPごとの1分あたりの要求数
 TLS_ENABLED=false
 ```
 
@@ -248,6 +253,7 @@ LOG_LEVEL=info
 
 - `SESSION_SECRET`: デフォルト値から変更必須
 - `CSRF_SECRET`: デフォルト値から変更必須
+- `API_TOKEN`: 32文字以上が必須
 - `LOG_LEVEL`: `debug`以外を推奨
 - `TLS_ENABLED=true`: HTTPS環境での運用推奨
 
@@ -327,7 +333,7 @@ FROM alpine:3.24
 make docker-build
 
 # コンテナ実行（本番モードで起動するため秘密値が必要）
-SESSION_SECRET=<64文字のランダム文字列> CSRF_SECRET=<32文字のランダム文字列> make docker-run
+SESSION_SECRET=<64文字のランダム文字列> CSRF_SECRET=<32文字のランダム文字列> API_TOKEN=<32文字以上のランダム文字列> make docker-run
 
 # イメージのプッシュ
 make docker-push

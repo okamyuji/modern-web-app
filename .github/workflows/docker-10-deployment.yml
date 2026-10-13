@@ -26,11 +26,18 @@ jobs:
       - name: Build image
         run: docker build --build-arg VERSION=${{ github.sha }} -t deployment-demo:ci 10-deployment
 
+      - name: Generate API token
+        run: |
+          token="$(openssl rand -hex 32)"
+          echo "::add-mask::$token"
+          echo "API_TOKEN=$token" >> "$GITHUB_ENV"
+
       - name: Run container
         run: |
           docker run -d --name app -p 8080:8080 \
             -e SESSION_SECRET="$(openssl rand -hex 32)" \
             -e CSRF_SECRET="$(openssl rand -hex 16)" \
+            -e API_TOKEN="$API_TOKEN" \
             deployment-demo:ci
 
       - name: Wait for healthy
@@ -47,7 +54,9 @@ jobs:
           curl -fsS http://localhost:8080/health
           curl -fsS -o /dev/null http://localhost:8080/static/css/app.css
           curl -fsS -o /dev/null -X POST -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $API_TOKEN" \
             -d '{"title":"ci"}' http://localhost:8080/api/todos
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/todos)" = 401
 
       - name: Container logs
         if: always()
