@@ -10,6 +10,7 @@ import (
 
 func setProductionEnv(t *testing.T) {
 	t.Helper()
+	t.Chdir(t.TempDir())
 	t.Setenv("ENV", "production")
 	t.Setenv("SESSION_SECRET", strings.Repeat("s", 64))
 	t.Setenv("CSRF_SECRET", strings.Repeat("c", 32))
@@ -53,6 +54,7 @@ func TestLoad_APITokenLengthInProduction(t *testing.T) {
 }
 
 func TestLoad_RejectsNonPositiveAPIRateLimit(t *testing.T) {
+	t.Chdir(t.TempDir())
 	t.Setenv("ENV", "development")
 	t.Setenv("API_RATE_LIMIT", "0")
 
@@ -64,6 +66,7 @@ func TestLoad_RejectsNonPositiveAPIRateLimit(t *testing.T) {
 }
 
 func TestLoad_AllowsMissingAPITokenOutsideProduction(t *testing.T) {
+	t.Chdir(t.TempDir())
 	t.Setenv("ENV", "development")
 	t.Setenv("API_TOKEN", "")
 
