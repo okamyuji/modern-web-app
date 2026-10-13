@@ -308,3 +308,37 @@ func TestLoad_PrometheusAddr(t *testing.T) {
 		})
 	}
 }
+
+func TestLoad_ServerAddr(t *testing.T) {
+	cases := []struct {
+		env        string
+		listenHost string
+		want       string
+	}{
+		{"development", "", "127.0.0.1:8080"},
+		{"test", "", "127.0.0.1:8080"},
+		{"testing", "", "127.0.0.1:8080"},
+		{"staging", "", ":8080"},
+		{"production", "", ":8080"},
+		{"development", "0.0.0.0", "0.0.0.0:8080"},
+		{"production", "::1", "[::1]:8080"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.env+"/"+tc.listenHost, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("ENV", tc.env)
+			t.Setenv("LISTEN_HOST", tc.listenHost)
+			unsetEnv(t, "PORT")
+			setDeployedAPIToken(t)
+
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+
+			if got := cfg.ServerAddr(); got != tc.want {
+				t.Fatalf("ServerAddr() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

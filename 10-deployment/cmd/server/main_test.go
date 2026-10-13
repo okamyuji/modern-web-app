@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -25,8 +26,15 @@ func newTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
+// localRequest トークンなしの API は Host がループバックの要求だけを通すので、Host を localhost にした要求を作る
+func localRequest(method, target string, body io.Reader) *http.Request {
+	req := httptest.NewRequest(method, target, body)
+	req.Host = "localhost:8080"
+	return req
+}
+
 func doRequest(h http.Handler, method, body, token, remoteAddr string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(method, "/api/todos", strings.NewReader(body))
+	req := localRequest(method, "/api/todos", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -290,9 +298,9 @@ func TestSetupRoutes_APIRoutesShareOneRateLimit(t *testing.T) {
 	h := setupRoutes(newTestDB(t), cfg)
 
 	list := httptest.NewRecorder()
-	h.ServeHTTP(list, httptest.NewRequest(http.MethodGet, "/api/todos", nil))
+	h.ServeHTTP(list, localRequest(http.MethodGet, "/api/todos", nil))
 	byID := httptest.NewRecorder()
-	h.ServeHTTP(byID, httptest.NewRequest(http.MethodGet, "/api/todos/1", nil))
+	h.ServeHTTP(byID, localRequest(http.MethodGet, "/api/todos/1", nil))
 
 	if list.Code != http.StatusOK {
 		t.Fatalf("/api/todos = %d, want 200", list.Code)
@@ -382,7 +390,7 @@ func TestTodosAPI_PostRequiresJSONContentType(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.contentType, func(t *testing.T) {
 			h := newAPIHandler(newTestDB(t), "", 100)
-			req := httptest.NewRequest(http.MethodPost, "/api/todos", strings.NewReader(`{"title":"drive-by"}`))
+			req := localRequest(http.MethodPost, "/api/todos", strings.NewReader(`{"title":"drive-by"}`))
 			if tc.contentType != "" {
 				req.Header.Set("Content-Type", tc.contentType)
 			}
@@ -394,5 +402,52 @@ func TestTodosAPI_PostRequiresJSONContentType(t *testing.T) {
 				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
 			}
 		})
+	}
+}
+
+func TestTodosAPI_NoTokenAllowsOnlyLoopbackHost(t *testing.T) {
+	cases := []struct {
+		host string
+		want int
+	}{
+		{"rebind.attacker.example", http.StatusForbidden},
+		{"rebind.attacker.example:8080", http.StatusForbidden},
+		{"localhost.attacker.example:8080", http.StatusForbidden},
+		{"192.168.1.10:8080", http.StatusForbidden},
+		{"", http.StatusForbidden},
+		{"localhost", http.StatusOK},
+		{"LOCALHOST:8080", http.StatusOK},
+		{"127.0.0.1:8080", http.StatusOK},
+		{"127.0.0.2", http.StatusOK},
+		{"[::1]:8080", http.StatusOK},
+		{"[::1]", http.StatusOK},
+	}
+	for _, tc := range cases {
+		t.Run(tc.host, func(t *testing.T) {
+			h := newAPIHandler(newTestDB(t), "", 100)
+			req := httptest.NewRequest(http.MethodGet, "/api/todos", nil)
+			req.Host = tc.host
+			rec := httptest.NewRecorder()
+
+			h.ServeHTTP(rec, req)
+
+			if rec.Code != tc.want {
+				t.Fatalf("Host %q: status = %d, want %d", tc.host, rec.Code, tc.want)
+			}
+		})
+	}
+}
+
+func TestTodosAPI_TokenAuthDoesNotCheckHost(t *testing.T) {
+	h := newAPIHandler(newTestDB(t), testToken, 100)
+	req := httptest.NewRequest(http.MethodGet, "/api/todos", nil)
+	req.Host = "api.example.com"
+	req.Header.Set("Authorization", "Bearer "+testToken)
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
 	}
 }

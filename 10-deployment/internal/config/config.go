@@ -14,12 +14,13 @@ import (
 
 type Config struct {
 	// アプリケーション設定
-	AppName   string
-	Port      string
-	Env       string
-	Version   string
-	BuildTime string
-	DebugMode bool
+	AppName    string
+	ListenHost string
+	Port       string
+	Env        string
+	Version    string
+	BuildTime  string
+	DebugMode  bool
 
 	// サーバー設定
 	ReadTimeout     time.Duration
@@ -100,12 +101,13 @@ func Load() (*Config, error) {
 
 	config := &Config{
 		// アプリケーション設定
-		AppName:   getEnv("APP_NAME", "deployment-demo"),
-		Port:      getEnv("PORT", "8080"),
-		Env:       env,
-		Version:   getEnv("VERSION", "dev"),
-		BuildTime: getEnv("BUILD_TIME", "unknown"),
-		DebugMode: env == "development",
+		AppName:    getEnv("APP_NAME", "deployment-demo"),
+		ListenHost: getEnv("LISTEN_HOST", ""),
+		Port:       getEnv("PORT", "8080"),
+		Env:        env,
+		Version:    getEnv("VERSION", "dev"),
+		BuildTime:  getEnv("BUILD_TIME", "unknown"),
+		DebugMode:  env == "development",
 
 		// サーバー設定
 		ReadTimeout:     getDuration("READ_TIMEOUT", 10*time.Second),
@@ -160,6 +162,11 @@ func Load() (*Config, error) {
 		APIRateLimit:  getInt("API_RATE_LIMIT", 100),
 		APIToken:      getEnv("API_TOKEN", ""),
 		CORSEnabled:   getBool("CORS_ENABLED", true),
+	}
+
+	// 認証なしの API を許す環境では、同じ LAN の端末から届かないようループバックだけで待ち受ける
+	if config.ListenHost == "" && config.allowsUnauthenticatedAPI() {
+		config.ListenHost = "127.0.0.1"
 	}
 
 	// 設定の検証
@@ -246,6 +253,11 @@ func (c *Config) validateProduction() []string {
 	}
 
 	return errors
+}
+
+// ServerAddr メインサーバーの待ち受けアドレスを返す。ListenHost が空なら全インターフェースで待ち受ける
+func (c *Config) ServerAddr() string {
+	return net.JoinHostPort(c.ListenHost, c.Port)
 }
 
 // PrometheusAddr メトリクスサーバーの待ち受けアドレスを返す

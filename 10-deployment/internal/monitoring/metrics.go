@@ -3,13 +3,12 @@ package monitoring
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -222,7 +221,7 @@ func RecordCacheOperation(operation, status string) {
 }
 
 // StartMetricsServer はPrometheusメトリクスサーバーを起動し、待ち受けたアドレスを返す
-func StartMetricsServer(addr string) (net.Addr, error) {
+func StartMetricsServer(addr string, idleTimeout time.Duration) (net.Addr, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -238,8 +237,8 @@ func StartMetricsServer(addr string) (net.Addr, error) {
 		return nil, fmt.Errorf("metrics server failed to listen on %s: %w", addr, err)
 	}
 
-	// ヘッダーを送りきらない接続でファイル記述子を使い切られないよう、待ち時間に上限を設ける
-	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	// 遅いヘッダーや休止した keep-alive 接続でファイル記述子を使い切られないよう、待ち時間に上限を設ける
+	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: idleTimeout}
 	go func() {
 		if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
 			panic("metrics server stopped: " + err.Error())
@@ -248,26 +247,28 @@ func StartMetricsServer(addr string) (net.Addr, error) {
 	return ln.Addr(), nil
 }
 
-// GracefulShutdown はアプリケーションのグレースフルシャットダウンを実行
-func GracefulShutdown(server *http.Server, cfg *config.Config, cleanup func()) {
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+// ServeUntilSignal ln で要求を処理し、quit を受けたら処理中の要求を timeout まで待って止める。cleanup の完了後に戻る
+func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signal, timeout time.Duration, cleanup func()) error {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		<-quit
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			server.Close()
+		}
+		if cleanup != nil {
+			cleanup()
+		}
+	}()
 
-	<-quit
-
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-	defer cancel()
-
-	// 新しい接続の受付を停止
-	if err := server.Shutdown(ctx); err != nil {
-		// 強制終了
-		server.Close()
+	// Shutdown を呼ぶと Serve はすぐ戻るので、処理中の要求と cleanup の完了は done で待つ
+	if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
 	}
-
-	// 追加のクリーンアップ処理
-	if cleanup != nil {
-		cleanup()
-	}
+	<-done
+	return nil
 }
 
 // HealthCheck はアプリケーションの健全性をチェック

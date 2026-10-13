@@ -1,12 +1,19 @@
 package monitoring
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -138,7 +145,7 @@ func TestPrometheusMiddleware_RecordsRequestSizeOnlyWithBody(t *testing.T) {
 func TestStartMetricsServer_ReturnsErrorForInvalidAddr(t *testing.T) {
 	for _, addr := range []string{"[[::1]]:0", "no-such-host.invalid:0", "127.0.0.1:9999:0"} {
 		t.Run(addr, func(t *testing.T) {
-			if _, err := StartMetricsServer(addr); err == nil {
+			if _, err := StartMetricsServer(addr, time.Minute); err == nil {
 				t.Fatalf("StartMetricsServer(%q) = nil error, want listen error", addr)
 			}
 		})
@@ -146,7 +153,7 @@ func TestStartMetricsServer_ReturnsErrorForInvalidAddr(t *testing.T) {
 }
 
 func TestStartMetricsServer_ServesMetrics(t *testing.T) {
-	ln, err := StartMetricsServer("127.0.0.1:0")
+	ln, err := StartMetricsServer("127.0.0.1:0", time.Minute)
 	if err != nil {
 		t.Fatalf("StartMetricsServer: %v", err)
 	}
@@ -163,7 +170,7 @@ func TestStartMetricsServer_ServesMetrics(t *testing.T) {
 }
 
 func TestStartMetricsServer_ServesHealth(t *testing.T) {
-	ln, err := StartMetricsServer("127.0.0.1:0")
+	ln, err := StartMetricsServer("127.0.0.1:0", time.Minute)
 	if err != nil {
 		t.Fatalf("StartMetricsServer: %v", err)
 	}
@@ -177,5 +184,107 @@ func TestStartMetricsServer_ServesHealth(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK || string(body) != "OK" {
 		t.Fatalf("status = %d, body = %q, want 200 OK", resp.StatusCode, body)
+	}
+}
+
+func TestStartMetricsServer_ClosesIdleKeepAliveConnections(t *testing.T) {
+	addr, err := StartMetricsServer("127.0.0.1:0", 200*time.Millisecond)
+	if err != nil {
+		t.Fatalf("StartMetricsServer: %v", err)
+	}
+	conn, err := net.Dial("tcp", addr.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	fmt.Fprint(conn, "GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n")
+	if _, err := http.ReadResponse(bufio.NewReader(conn), nil); err != nil {
+		t.Fatalf("first response: %v", err)
+	}
+
+	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	_, err = conn.Read(make([]byte, 1))
+
+	if !errors.Is(err, io.EOF) {
+		t.Fatalf("read after idle = %v, want EOF from the server closing the idle connection", err)
+	}
+}
+
+func TestServeUntilSignal_WaitsForInFlightRequest(t *testing.T) {
+	started := make(chan struct{})
+	var finished atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		time.Sleep(300 * time.Millisecond)
+		finished.Store(true)
+		w.Write([]byte("done"))
+	})
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	quit := make(chan os.Signal, 1)
+	var cleaned atomic.Bool
+	served := make(chan error, 1)
+	go func() {
+		served <- ServeUntilSignal(&http.Server{Handler: mux}, ln, quit, 5*time.Second, func() { cleaned.Store(true) })
+	}()
+	got := make(chan string, 1)
+	go func() {
+		resp, err := http.Get("http://" + ln.Addr().String() + "/slow")
+		if err != nil {
+			got <- err.Error()
+			return
+		}
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		got <- string(body)
+	}()
+	<-started
+
+	quit <- syscall.SIGTERM
+	err = <-served
+
+	if err != nil {
+		t.Fatalf("ServeUntilSignal = %v, want nil", err)
+	}
+	if !finished.Load() || !cleaned.Load() {
+		t.Fatalf("returned before the in-flight request finished (%v) or cleanup ran (%v)", finished.Load(), cleaned.Load())
+	}
+	if body := <-got; body != "done" {
+		t.Fatalf("client got %q, want done", body)
+	}
+}
+
+func TestServeUntilSignal_ClosesConnectionsAfterTimeout(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	mux := http.NewServeMux()
+	mux.HandleFunc("/stuck", func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		<-release
+	})
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	quit := make(chan os.Signal, 1)
+	go ServeUntilSignal(&http.Server{Handler: mux}, ln, quit, 50*time.Millisecond, nil)
+	clientErr := make(chan error, 1)
+	go func() {
+		client := &http.Client{Timeout: 3 * time.Second}
+		_, err := client.Get("http://" + ln.Addr().String() + "/stuck")
+		clientErr <- err
+	}()
+	<-started
+	begin := time.Now()
+
+	quit <- syscall.SIGTERM
+	err = <-clientErr
+
+	if err == nil || time.Since(begin) > time.Second {
+		t.Fatalf("client err = %v after %v, want the connection closed soon after the 50ms shutdown timeout", err, time.Since(begin))
 	}
 }

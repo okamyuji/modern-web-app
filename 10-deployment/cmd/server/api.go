@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -27,10 +28,17 @@ func newAPIHandler(db *sql.DB, token string, ratePerMinute int) http.Handler {
 	return limitRate(newRateLimiter(ratePerMinute, time.Minute), requireToken(token, api))
 }
 
-// requireToken Authorization: Bearer <token> が一致しない要求を 401 で拒否する。token が空なら素通しする
+// requireToken Authorization: Bearer <token> が一致しない要求を 401 で拒否する。token が空なら Host がループバックの要求だけを通す
 func requireToken(token string, next http.Handler) http.Handler {
 	if token == "" {
-		return next
+		// DNS rebinding では、ブラウザが攻撃者のドメイン名を Host に入れて送ってくる
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !isLoopbackHost(r.Host) {
+				http.Error(w, "forbidden host", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
 	}
 	want := []byte("Bearer " + token)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +49,19 @@ func requireToken(token string, next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// isLoopbackHost Host ヘッダーが localhost かループバックアドレスを指すかを返す
+func isLoopbackHost(hostport string) bool {
+	host := hostport
+	if h, _, err := net.SplitHostPort(hostport); err == nil {
+		host = h
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	addr, err := netip.ParseAddr(strings.Trim(host, "[]"))
+	return err == nil && addr.IsLoopback()
 }
 
 // limitRate クライアント IP ごとの上限を超えた要求を 429 で拒否する

@@ -210,6 +210,7 @@ Prometheusメトリクスのサーバーは、既定で`127.0.0.1`だけで待�
 ```bash
 APP_NAME=deployment-demo
 ENV=development              # development, test, testing, staging, production
+LISTEN_HOST=                 # 空なら、development、test、testingでは127.0.0.1、それ以外では全インターフェース
 PORT=8080
 VERSION=v1.0.0
 ```
@@ -396,17 +397,30 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 ### 3. グレースフルシャットダウン
 
 ```go
-func GracefulShutdown(server *http.Server, cfg *config.Config, cleanup func()) {
-    quit := make(chan os.Signal, 1)
-    signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-    <-quit
-    
-    ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-    defer cancel()
-    
-    server.Shutdown(ctx)
+func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signal, timeout time.Duration, cleanup func()) error {
+    done := make(chan struct{})
+    go func() {
+        defer close(done)
+        <-quit
+        ctx, cancel := context.WithTimeout(context.Background(), timeout)
+        defer cancel()
+        if err := server.Shutdown(ctx); err != nil {
+            server.Close()
+        }
+        if cleanup != nil {
+            cleanup()
+        }
+    }()
+
+    if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+        return err
+    }
+    <-done
+    return nil
 }
 ```
+
+`Shutdown`を呼ぶと`Serve`はすぐに戻ります。そのため、処理中の要求と`cleanup`の完了を`done`で待ってから戻ります。
 
 #### 実装のポイント
 
@@ -493,6 +507,7 @@ tail -f logs/deploy.log
 
 - Todo APIのBearerトークン認証（Cookieを使わないので、トークンを設定した環境ではCSRFの対象になりません）
 - Todo作成時の`Content-Type: application/json`の必須化（トークンを設定しない開発環境でも、他サイトのページからTodoを作れません）
+- DNS rebinding対策（トークンを設定しないときは、Hostヘッダーが`localhost`かループバックアドレスの要求だけを受け付けます）
 - 入力値検証
 - SQLインジェクション対策
 

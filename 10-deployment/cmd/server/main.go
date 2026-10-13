@@ -11,8 +11,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"slices"
 	"strings"
+	"syscall"
 	"unicode/utf8"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -71,7 +73,7 @@ func main() {
 
 	// Prometheusメトリクスサーバーの起動
 	if cfg.PrometheusEnabled {
-		addr, err := monitoring.StartMetricsServer(cfg.PrometheusAddr())
+		addr, err := monitoring.StartMetricsServer(cfg.PrometheusAddr(), cfg.IdleTimeout)
 		if err != nil {
 			log.Fatalf("Prometheusメトリクスサーバーの起動に失敗しました: %v", err)
 		}
@@ -83,7 +85,7 @@ func main() {
 
 	// HTTPサーバーの設定
 	server := &http.Server{
-		Addr:         ":" + cfg.Port,
+		Addr:         cfg.ServerAddr(),
 		Handler:      mux,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
@@ -95,17 +97,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("サーバーの起動に失敗しました: %v", err)
 	}
-	log.Printf("サーバーが起動しました: http://localhost:%s", cfg.Port)
+	log.Printf("サーバーが起動しました: http://%s", ln.Addr())
 
-	// グレースフルシャットダウンの設定
-	go monitoring.GracefulShutdown(server, cfg, func() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	if err := monitoring.ServeUntilSignal(server, ln, quit, cfg.ShutdownTimeout, func() {
 		log.Println("データベース接続を閉じています...")
 		db.Close()
-	})
-
-	// サーバー起動
-	if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("サーバーの起動に失敗しました: %v", err)
+	}); err != nil {
+		log.Fatalf("サーバーが異常終了しました: %v", err)
 	}
 
 	log.Println("サーバーが正常に停止しました")
