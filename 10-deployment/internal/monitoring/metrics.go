@@ -211,7 +211,7 @@ func RecordCacheOperation(operation, status string) {
 func StartMetricsServer(port string) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
-	
+
 	// ヘルスチェック用エンドポイント
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
