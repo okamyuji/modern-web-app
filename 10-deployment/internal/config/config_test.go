@@ -265,3 +265,37 @@ func TestLoad_RejectsDefaultSecretsOutsideDevelopmentAndTest(t *testing.T) {
 		t.Fatalf("err = %v, want default secret errors for staging", err)
 	}
 }
+
+func setDeployedSecrets(t *testing.T) {
+	t.Helper()
+	t.Setenv("API_TOKEN", strings.Repeat("t", minAPITokenLength))
+	t.Setenv("SESSION_SECRET", strings.Repeat("s", 32))
+	t.Setenv("CSRF_SECRET", strings.Repeat("c", 16))
+}
+
+func TestLoad_StagingSkipsProductionOnlyChecks(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("ENV", "staging")
+	setDeployedSecrets(t)
+	t.Setenv("LOG_LEVEL", "debug")
+
+	if _, err := Load(); err != nil {
+		t.Fatalf("Load: %v, want staging to allow LOG_LEVEL=debug", err)
+	}
+}
+
+func TestLoad_RejectsUnknownENV(t *testing.T) {
+	for _, env := range []string{"Production", "prod", "stage", "dev"} {
+		t.Run(env, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("ENV", env)
+			setDeployedSecrets(t)
+
+			_, err := Load()
+
+			if err == nil || !strings.Contains(err.Error(), "ENV must be one of") {
+				t.Fatalf("err = %v, want an unknown ENV error", err)
+			}
+		})
+	}
+}

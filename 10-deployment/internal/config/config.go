@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -186,6 +187,11 @@ func (c *Config) IsTesting() bool {
 
 func (c *Config) Validate() error {
 	var errors []string
+
+	// 書き間違いの ENV では本番専用の検査が黙って外れるので、知らない値は拒否する
+	if !slices.Contains([]string{"development", "test", "testing", "staging", "production"}, c.Env) {
+		errors = append(errors, "ENV must be one of development, test, testing, staging, production")
+	}
 
 	// 許可する環境を列挙し、staging や ENV の書き間違いでは認証なしの API や既定の秘密値で起動しない
 	if !c.allowsUnauthenticatedAPI() {

@@ -207,7 +207,7 @@ curl http://localhost:9090/metrics
 
 ```bash
 APP_NAME=deployment-demo
-ENV=development              # development, staging, production
+ENV=development              # development, test, testing, staging, production
 PORT=8080
 VERSION=v1.0.0
 ```
@@ -254,7 +254,7 @@ LOG_LEVEL=info
 - `SESSION_SECRET`: デフォルト値から変更必須（`ENV`が`development`、`test`、`testing`以外のとき）
 - `CSRF_SECRET`: デフォルト値から変更必須（同上）
 - `API_TOKEN`: 32文字以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
-- `ENV`: プロセスの環境変数の値が、`.env`系のファイルの値より優先されます。どちらにも指定がないときは`production`として扱います
+- `ENV`: プロセスの環境変数の値が、`.env`系のファイルの値より優先されます。どちらにも指定がないときは`production`として扱います。使える値は`development`、`test`、`testing`、`staging`、`production`で、ほかの値では起動しません
 - `LOG_LEVEL`: `debug`以外を推奨
 - `TLS_ENABLED=true`: HTTPS環境での運用推奨
 
