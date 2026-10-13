@@ -220,7 +220,7 @@ func RecordCacheOperation(operation, status string) {
 }
 
 // StartMetricsServer はPrometheusメトリクスサーバーを起動
-func StartMetricsServer(port string) {
+func StartMetricsServer(addr string) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -231,7 +231,7 @@ func StartMetricsServer(port string) {
 	})
 
 	server := &http.Server{
-		Addr:    ":" + port,
+		Addr:    addr,
 		Handler: mux,
 	}
 

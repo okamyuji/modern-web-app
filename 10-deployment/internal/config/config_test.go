@@ -12,8 +12,6 @@ func setProductionEnv(t *testing.T) {
 	t.Helper()
 	t.Chdir(t.TempDir())
 	t.Setenv("ENV", "production")
-	t.Setenv("SESSION_SECRET", strings.Repeat("s", 64))
-	t.Setenv("CSRF_SECRET", strings.Repeat("c", 32))
 }
 
 func TestLoad_RequiresAPITokenInProduction(t *testing.T) {
@@ -82,14 +80,12 @@ func TestLoad_AllowsMissingAPITokenOutsideProduction(t *testing.T) {
 
 func validProductionConfig() Config {
 	return Config{
-		Env:           "production",
-		Port:          "8080",
-		DatabaseURL:   "sqlite://app.db",
-		SessionSecret: strings.Repeat("s", 32),
-		CSRFSecret:    strings.Repeat("c", 16),
-		APIToken:      strings.Repeat("t", minAPITokenLength),
-		APIRateLimit:  1,
-		LogLevel:      "info",
+		Env:          "production",
+		Port:         "8080",
+		DatabaseURL:  "sqlite://app.db",
+		APIToken:     strings.Repeat("t", minAPITokenLength),
+		APIRateLimit: 1,
+		LogLevel:     "info",
 	}
 }
 
@@ -100,12 +96,6 @@ func TestValidate(t *testing.T) {
 		wantErr string
 	}{
 		{"valid production config", func(*Config) {}, ""},
-		{"default session secret in production", func(c *Config) {
-			c.SessionSecret = "change-this-in-production-please-use-random-64-chars"
-		}, "SESSION_SECRET must be changed"},
-		{"default csrf secret in production", func(c *Config) {
-			c.CSRFSecret = "change-this-csrf-secret-in-production-use-random-32-chars"
-		}, "CSRF_SECRET must be changed"},
 		{"debug log level in production", func(c *Config) { c.LogLevel = "debug" }, "LOG_LEVEL"},
 		{"debug log level outside production", func(c *Config) { c.Env = "development"; c.LogLevel = "debug" }, ""},
 		{"debug mode in production", func(c *Config) { c.DebugMode = true }, "debug mode"},
@@ -120,8 +110,6 @@ func TestValidate(t *testing.T) {
 		{"port 65536", func(c *Config) { c.Port = "65536" }, "invalid PORT"},
 		{"empty database url", func(c *Config) { c.DatabaseURL = "" }, "DATABASE_URL"},
 		{"rate limit 0", func(c *Config) { c.APIRateLimit = 0 }, "API_RATE_LIMIT"},
-		{"session secret 31 chars", func(c *Config) { c.SessionSecret = strings.Repeat("s", 31) }, "SESSION_SECRET must be at least"},
-		{"csrf secret 15 chars", func(c *Config) { c.CSRFSecret = strings.Repeat("c", 15) }, "CSRF_SECRET must be at least"},
 		{"short api token outside production", func(c *Config) { c.Env = "development"; c.APIToken = "" }, ""},
 	}
 	for _, tc := range cases {
@@ -163,8 +151,6 @@ func TestLoad_APITokenRequirementByEnvironment(t *testing.T) {
 			t.Chdir(t.TempDir())
 			t.Setenv("ENV", tc.env)
 			t.Setenv("API_TOKEN", tc.token)
-			t.Setenv("SESSION_SECRET", strings.Repeat("s", 32))
-			t.Setenv("CSRF_SECRET", strings.Repeat("c", 16))
 
 			_, err := Load()
 
@@ -237,14 +223,12 @@ func TestLoad_DotEnvCanSelectDevelopment(t *testing.T) {
 
 func TestLoad_SelectsProductionEnvFileWhenENVMissing(t *testing.T) {
 	dir := t.TempDir()
-	content := "API_TOKEN=" + strings.Repeat("t", minAPITokenLength) + "\n" +
-		"SESSION_SECRET=" + strings.Repeat("s", 32) + "\n" +
-		"CSRF_SECRET=" + strings.Repeat("c", 16) + "\n"
+	content := "API_TOKEN=" + strings.Repeat("t", minAPITokenLength) + "\n"
 	if err := os.WriteFile(filepath.Join(dir, ".env.production"), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(dir)
-	for _, key := range []string{"ENV", "API_TOKEN", "SESSION_SECRET", "CSRF_SECRET"} {
+	for _, key := range []string{"ENV", "API_TOKEN"} {
 		unsetEnv(t, key)
 	}
 
@@ -255,31 +239,15 @@ func TestLoad_SelectsProductionEnvFileWhenENVMissing(t *testing.T) {
 	}
 }
 
-func TestLoad_RejectsDefaultSecretsOutsideDevelopmentAndTest(t *testing.T) {
-	t.Chdir(t.TempDir())
-	t.Setenv("ENV", "staging")
-	t.Setenv("API_TOKEN", strings.Repeat("t", minAPITokenLength))
-	unsetEnv(t, "SESSION_SECRET")
-	unsetEnv(t, "CSRF_SECRET")
-
-	_, err := Load()
-
-	if err == nil || !strings.Contains(err.Error(), "SESSION_SECRET must be changed") || !strings.Contains(err.Error(), "CSRF_SECRET must be changed") {
-		t.Fatalf("err = %v, want default secret errors for staging", err)
-	}
-}
-
-func setDeployedSecrets(t *testing.T) {
+func setDeployedAPIToken(t *testing.T) {
 	t.Helper()
 	t.Setenv("API_TOKEN", strings.Repeat("t", minAPITokenLength))
-	t.Setenv("SESSION_SECRET", strings.Repeat("s", 32))
-	t.Setenv("CSRF_SECRET", strings.Repeat("c", 16))
 }
 
 func TestLoad_StagingSkipsProductionOnlyChecks(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("ENV", "staging")
-	setDeployedSecrets(t)
+	setDeployedAPIToken(t)
 	t.Setenv("LOG_LEVEL", "debug")
 
 	if _, err := Load(); err != nil {
@@ -292,12 +260,50 @@ func TestLoad_RejectsUnknownENV(t *testing.T) {
 		t.Run(env, func(t *testing.T) {
 			t.Chdir(t.TempDir())
 			t.Setenv("ENV", env)
-			setDeployedSecrets(t)
+			setDeployedAPIToken(t)
 
 			_, err := Load()
 
 			if err == nil || !strings.Contains(err.Error(), "ENV must be one of") {
 				t.Fatalf("err = %v, want an unknown ENV error", err)
+			}
+		})
+	}
+}
+
+func TestLoad_StagingStartsWithAPITokenOnly(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("ENV", "staging")
+	t.Setenv("API_TOKEN", strings.Repeat("t", minAPITokenLength))
+
+	if _, err := Load(); err != nil {
+		t.Fatalf("Load: %v, want staging to start without session or CSRF secrets", err)
+	}
+}
+
+func TestLoad_PrometheusAddr(t *testing.T) {
+	cases := []struct {
+		host string
+		want string
+	}{
+		{"", "127.0.0.1:9090"},
+		{"0.0.0.0", "0.0.0.0:9090"},
+		{"::", "[::]:9090"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.want, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("ENV", "development")
+			t.Setenv("PROMETHEUS_HOST", tc.host)
+			unsetEnv(t, "PROMETHEUS_PORT")
+
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+
+			if got := cfg.PrometheusAddr(); got != tc.want {
+				t.Fatalf("PrometheusAddr() = %q, want %q", got, tc.want)
 			}
 		})
 	}

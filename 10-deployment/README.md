@@ -193,9 +193,11 @@ curl -H "Authorization: Bearer $API_TOKEN" http://localhost:8080/api/todos
 # メトリクス（JSON形式）
 curl http://localhost:8080/metrics
 
-# Prometheusメトリクス
+# Prometheusメトリクス（既定ではアプリと同じホストからだけ取得できます）
 curl http://localhost:9090/metrics
 ```
+
+Prometheusメトリクスのサーバーは、既定で`127.0.0.1`だけで待ち受けます。別のホストやコンテナのPrometheusから取得するときは、`PROMETHEUS_HOST=0.0.0.0`を設定します。このエンドポイントには認証がないので、開くときはファイアウォールなどで取得元を限ってください。
 
 ## 設定管理
 
@@ -215,8 +217,6 @@ VERSION=v1.0.0
 #### セキュリティ設定
 
 ```bash
-SESSION_SECRET=<64文字のランダム文字列>
-CSRF_SECRET=<32文字のランダム文字列>
 API_TOKEN=<32文字以上のランダム文字列>
 API_RATE_LIMIT=100           # クライアントIPごとの1分あたりの要求数
 TLS_ENABLED=false
@@ -234,6 +234,7 @@ DB_MAX_IDLE_CONNS=5
 
 ```bash
 PROMETHEUS_ENABLED=true
+PROMETHEUS_HOST=127.0.0.1     # 別ホストから取得するときだけ0.0.0.0
 PROMETHEUS_PORT=9090
 LOG_LEVEL=info
 ```
@@ -251,8 +252,6 @@ LOG_LEVEL=info
 
 本番環境では、次の設定を必ず見直してください。
 
-- `SESSION_SECRET`: デフォルト値から変更必須（`ENV`が`development`、`test`、`testing`以外のとき）
-- `CSRF_SECRET`: デフォルト値から変更必須（同上）
 - `API_TOKEN`: 32文字以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
 - `ENV`: プロセスの環境変数の値が、`.env`系のファイルの値より優先されます。どちらにも指定がないときは`production`として扱います。使える値は`development`、`test`、`testing`、`staging`、`production`で、ほかの値では起動しません
 - `LOG_LEVEL`: `debug`以外を推奨
@@ -333,8 +332,8 @@ FROM alpine:3.24
 # イメージビルド
 make docker-build
 
-# コンテナ実行（本番モードで起動するため秘密値が必要。DBは名前付きボリュームdeployment-demo-dataに保存）
-SESSION_SECRET=<64文字のランダム文字列> CSRF_SECRET=<32文字のランダム文字列> API_TOKEN=<32文字以上のランダム文字列> make docker-run
+# コンテナ実行（本番モードで起動するためAPI_TOKENが必要。DBは名前付きボリュームdeployment-demo-dataに保存）
+API_TOKEN=<32文字以上のランダム文字列> make docker-run
 
 # イメージのプッシュ
 make docker-push
@@ -552,7 +551,7 @@ tail -f logs/deploy.log
 
 - ドキュメント このREADMEファイルです。
 - ログ `logs/`ディレクトリにログファイルを出力します。
-- メトリクス `http://localhost:9090/metrics`で取得できます。
+- メトリクス アプリと同じホストから`http://localhost:9090/metrics`で取得できます。
 - ヘルスチェック `http://localhost:8080/health`で確認できます。
 
 ---
