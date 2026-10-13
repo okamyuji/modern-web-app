@@ -160,9 +160,15 @@ docker-build: ## Dockerイメージをビルド
 	@echo "Dockerイメージビルド完了"
 
 docker-run: ## Dockerコンテナを起動
+	@if [ -z "$$SESSION_SECRET" ] || [ -z "$$CSRF_SECRET" ]; then \
+		echo "SESSION_SECRET と CSRF_SECRET を環境変数で渡してください（本番モードは既定値で起動しません）"; \
+		exit 1; \
+	fi
 	@echo "Dockerコンテナを起動中..."
 	docker run --rm -p 8080:8080 \
 		-e ENV=production \
+		-e SESSION_SECRET \
+		-e CSRF_SECRET \
 		$(DOCKER_IMAGE):latest
 
 docker-push: docker-build ## Dockerイメージをプッシュ

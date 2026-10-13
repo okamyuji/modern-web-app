@@ -310,12 +310,12 @@ DEPLOY_STRATEGY=rolling ./scripts/deploy.sh v1.0.0 production
 
 ```dockerfile
 # ビルダーステージ
-FROM golang:1.24.3-alpine AS builder
+FROM golang:1.27-alpine3.24 AS builder
 # 依存関係とソースコードのコピー
 # ビルド実行
 
 # 本番ステージ
-FROM alpine:3.19
+FROM alpine:3.24
 # 最小限のファイルのみコピー
 # 非rootユーザーで実行
 ```
@@ -326,11 +326,8 @@ FROM alpine:3.19
 # イメージビルド
 make docker-build
 
-# コンテナ実行
-make docker-run
-
-# 本番用イメージビルド
-make docker-build-prod
+# コンテナ実行（本番モードで起動するため秘密値が必要）
+SESSION_SECRET=<64文字のランダム文字列> CSRF_SECRET=<32文字のランダム文字列> make docker-run
 
 # イメージのプッシュ
 make docker-push
