@@ -333,7 +333,7 @@ FROM alpine:3.24
 # イメージビルド
 make docker-build
 
-# コンテナ実行（本番モードで起動するため秘密値が必要）
+# コンテナ実行（本番モードで起動するため秘密値が必要。DBは名前付きボリュームdeployment-demo-dataに保存）
 SESSION_SECRET=<64文字のランダム文字列> CSRF_SECRET=<32文字のランダム文字列> API_TOKEN=<32文字以上のランダム文字列> make docker-run
 
 # イメージのプッシュ

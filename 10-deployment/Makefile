@@ -166,6 +166,7 @@ docker-run: ## Dockerコンテナを起動
 	fi
 	@echo "Dockerコンテナを起動中..."
 	docker run --rm -p 8080:8080 \
+		-v $(APP_NAME)-data:/app/data \
 		-e ENV=production \
 		-e SESSION_SECRET \
 		-e CSRF_SECRET \
