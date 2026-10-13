@@ -288,3 +288,51 @@ func TestServeUntilSignal_ClosesConnectionsAfterTimeout(t *testing.T) {
 		t.Fatalf("client err = %v after %v, want the connection closed soon after the 50ms shutdown timeout", err, time.Since(begin))
 	}
 }
+
+func TestServeUntilSignal_ReturnsWhenServerShutsDownWithoutSignal(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &http.Server{Handler: http.NewServeMux()}
+	served := make(chan error, 1)
+	go func() { served <- ServeUntilSignal(server, ln, make(chan os.Signal), time.Second, nil) }()
+	waitForListener(t, ln.Addr().String())
+
+	server.Shutdown(t.Context())
+
+	select {
+	case err := <-served:
+		if err != nil {
+			t.Fatalf("ServeUntilSignal = %v, want nil", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("ServeUntilSignal did not return after Shutdown without a signal")
+	}
+}
+
+func TestServeUntilSignal_ReturnsServeError(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ln.Close()
+
+	err = ServeUntilSignal(&http.Server{}, ln, make(chan os.Signal), time.Second, nil)
+
+	if err == nil {
+		t.Fatal("ServeUntilSignal = nil, want the Serve error from a closed listener")
+	}
+}
+
+func waitForListener(t *testing.T, addr string) {
+	t.Helper()
+	for range 50 {
+		if conn, err := net.Dial("tcp", addr); err == nil {
+			conn.Close()
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("listener %s not ready", addr)
+}

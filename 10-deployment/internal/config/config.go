@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"slices"
 	"strconv"
@@ -258,6 +259,15 @@ func (c *Config) validateProduction() []string {
 // ServerAddr メインサーバーの待ち受けアドレスを返す。ListenHost が空なら全インターフェースで待ち受ける
 func (c *Config) ServerAddr() string {
 	return net.JoinHostPort(c.ListenHost, c.Port)
+}
+
+// HealthCheckURL 自分の /health を呼ぶ URL を返す。全インターフェースで待ち受けるときはループバックに送る
+func (c *Config) HealthCheckURL() string {
+	host := c.ListenHost
+	if addr, err := netip.ParseAddr(host); host == "" || (err == nil && addr.IsUnspecified()) {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, c.Port) + "/health"
 }
 
 // PrometheusAddr メトリクスサーバーの待ち受けアドレスを返す

@@ -215,6 +215,8 @@ PORT=8080
 VERSION=v1.0.0
 ```
 
+`ENV`が`development`、`test`、`testing`のときに`LISTEN_HOST`をループバック以外にすると、同じネットワークの端末からTodo APIに届きます。Hostヘッダーを確かめる仕組みはDNS rebinding対策なので、ネットワーク越しに届く要求は止めません。外へ開くときは`API_TOKEN`を設定してください。
+
 #### セキュリティ設定
 
 ```bash
@@ -507,7 +509,7 @@ tail -f logs/deploy.log
 
 - Todo APIのBearerトークン認証（Cookieを使わないので、トークンを設定した環境ではCSRFの対象になりません）
 - Todo作成時の`Content-Type: application/json`の必須化（トークンを設定しない開発環境でも、他サイトのページからTodoを作れません）
-- DNS rebinding対策（トークンを設定しないときは、Hostヘッダーが`localhost`かループバックアドレスの要求だけを受け付けます）
+- Todo APIのDNS rebinding対策（トークンを設定しないときは、`/api/todos`がHostヘッダーが`localhost`かループバックアドレスの要求だけを受け付けます）
 - 入力値検証
 - SQLインジェクション対策
 

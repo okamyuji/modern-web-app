@@ -249,10 +249,16 @@ func StartMetricsServer(addr string, idleTimeout time.Duration) (net.Addr, error
 
 // ServeUntilSignal ln で要求を処理し、quit を受けたら処理中の要求を timeout まで待って止める。cleanup の完了後に戻る
 func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signal, timeout time.Duration, cleanup func()) error {
+	serveDone := make(chan struct{})
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		<-quit
+		// Serve が異常終了したときや外から Shutdown されたときも、このゴルーチンを残さない
+		select {
+		case <-quit:
+		case <-serveDone:
+			return
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
@@ -264,11 +270,13 @@ func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signa
 	}()
 
 	// Shutdown を呼ぶと Serve はすぐ戻るので、処理中の要求と cleanup の完了は done で待つ
-	if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
+	err := server.Serve(ln)
+	close(serveDone)
 	<-done
-	return nil
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }
 
 // HealthCheck はアプリケーションの健全性をチェック

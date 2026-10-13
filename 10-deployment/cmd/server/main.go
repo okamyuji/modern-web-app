@@ -46,7 +46,12 @@ type HealthResponse struct {
 func main() {
 	// ヘルスチェックモード
 	if len(os.Args) > 1 && os.Args[1] == "-health-check" {
-		resp, err := http.Get("http://localhost:8080/health")
+		// サーバーと同じ設定を読み、LISTEN_HOST と PORT から宛先を決める
+		cfg, err := config.Load()
+		if err != nil {
+			os.Exit(1)
+		}
+		resp, err := http.Get(cfg.HealthCheckURL())
 		if err != nil || resp.StatusCode != http.StatusOK {
 			os.Exit(1)
 		}

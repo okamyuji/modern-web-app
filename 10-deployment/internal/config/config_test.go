@@ -342,3 +342,28 @@ func TestLoad_ServerAddr(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_HealthCheckURL(t *testing.T) {
+	cases := []struct {
+		listenHost string
+		port       string
+		want       string
+	}{
+		{"", "8080", "http://127.0.0.1:8080/health"},
+		{"0.0.0.0", "8080", "http://127.0.0.1:8080/health"},
+		{"::", "9000", "http://127.0.0.1:9000/health"},
+		{"127.0.0.1", "8080", "http://127.0.0.1:8080/health"},
+		{"192.168.0.18", "8080", "http://192.168.0.18:8080/health"},
+		{"::1", "8080", "http://[::1]:8080/health"},
+		{"localhost", "8080", "http://localhost:8080/health"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.listenHost+"/"+tc.port, func(t *testing.T) {
+			cfg := Config{ListenHost: tc.listenHost, Port: tc.port}
+
+			if got := cfg.HealthCheckURL(); got != tc.want {
+				t.Fatalf("HealthCheckURL() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
