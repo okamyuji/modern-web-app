@@ -1,0 +1,54 @@
+name: Docker (10-deployment)
+
+on:
+  pull_request:
+    paths:
+      - "10-deployment/**"
+      - ".github/workflows/docker-10-deployment.yml"
+  push:
+    branches: [main]
+    paths:
+      - "10-deployment/**"
+      - ".github/workflows/docker-10-deployment.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        run: docker build --build-arg VERSION=${{ github.sha }} -t deployment-demo:ci 10-deployment
+
+      - name: Run container
+        run: |
+          docker run -d --name app -p 8080:8080 \
+            -e SESSION_SECRET="$(openssl rand -hex 32)" \
+            -e CSRF_SECRET="$(openssl rand -hex 16)" \
+            deployment-demo:ci
+
+      - name: Wait for healthy
+        run: |
+          for _ in $(seq 45); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' app)" = healthy ] && exit 0
+            [ "$(docker inspect -f '{{.State.Running}}' app)" = true ] || exit 1
+            sleep 2
+          done
+          exit 1
+
+      - name: Check endpoints
+        run: |
+          curl -fsS http://localhost:8080/health
+          curl -fsS -o /dev/null http://localhost:8080/static/css/app.css
+          curl -fsS -o /dev/null -X POST -H 'Content-Type: application/json' \
+            -d '{"title":"ci"}' http://localhost:8080/api/todos
+
+      - name: Container logs
+        if: always()
+        run: docker logs app || true
