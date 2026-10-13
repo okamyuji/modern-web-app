@@ -400,10 +400,15 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 
 ```go
 func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signal, timeout time.Duration, cleanup func()) error {
+    serveDone := make(chan struct{})
     done := make(chan struct{})
     go func() {
         defer close(done)
-        <-quit
+        select {
+        case <-quit:
+        case <-serveDone:
+            return
+        }
         ctx, cancel := context.WithTimeout(context.Background(), timeout)
         defer cancel()
         if err := server.Shutdown(ctx); err != nil {
@@ -414,15 +419,17 @@ func ServeUntilSignal(server *http.Server, ln net.Listener, quit <-chan os.Signa
         }
     }()
 
-    if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-        return err
-    }
+    err := server.Serve(ln)
+    close(serveDone)
     <-done
-    return nil
+    if errors.Is(err, http.ErrServerClosed) {
+        return nil
+    }
+    return err
 }
 ```
 
-`Shutdown`を呼ぶと`Serve`はすぐに戻ります。そのため、処理中の要求と`cleanup`の完了を`done`で待ってから戻ります。
+`Shutdown`を呼ぶと`Serve`はすぐに戻るので、処理中の要求と`cleanup`の完了を`done`で待ってから戻ります。シグナルが来ないまま`Serve`が終わったときに停止用のゴルーチンを抜けさせるのが、`serveDone`の役目です。
 
 #### 実装のポイント
 

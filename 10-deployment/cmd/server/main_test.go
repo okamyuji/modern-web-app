@@ -451,3 +451,31 @@ func TestTodosAPI_TokenAuthDoesNotCheckHost(t *testing.T) {
 		t.Fatalf("status = %d, want 200", rec.Code)
 	}
 }
+
+func TestCheckHealth(t *testing.T) {
+	cases := []struct {
+		name    string
+		handler http.HandlerFunc
+		wantErr bool
+	}{
+		{"ok", func(w http.ResponseWriter, r *http.Request) {}, false},
+		{"unhealthy", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusServiceUnavailable) }, true},
+		{"stalled", func(w http.ResponseWriter, r *http.Request) { time.Sleep(time.Second) }, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(tc.handler)
+			defer srv.Close()
+			start := time.Now()
+
+			err := checkHealth(srv.URL, 100*time.Millisecond)
+
+			if tc.wantErr != (err != nil) {
+				t.Fatalf("checkHealth = %v, wantErr %v", err, tc.wantErr)
+			}
+			if elapsed := time.Since(start); elapsed > 500*time.Millisecond {
+				t.Fatalf("checkHealth took %v, want it to give up after the 100ms timeout", elapsed)
+			}
+		})
+	}
+}

@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strings"
 	"syscall"
+	"time"
 	"unicode/utf8"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -51,8 +52,7 @@ func main() {
 		if err != nil {
 			os.Exit(1)
 		}
-		resp, err := http.Get(cfg.HealthCheckURL())
-		if err != nil || resp.StatusCode != http.StatusOK {
+		if err := checkHealth(cfg.HealthCheckURL(), 5*time.Second); err != nil {
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -114,6 +114,20 @@ func main() {
 	}
 
 	log.Println("サーバーが正常に停止しました")
+}
+
+// checkHealth url が timeout 以内に 200 を返さなければエラーを返す
+func checkHealth(url string, timeout time.Duration) error {
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health check returned %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func initDatabase(databaseURL string) (*sql.DB, error) {
