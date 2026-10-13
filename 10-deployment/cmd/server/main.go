@@ -102,7 +102,8 @@ func main() {
 func initDatabase(databaseURL string) (*sql.DB, error) {
 	path, ok := strings.CutPrefix(databaseURL, "sqlite://")
 	if !ok {
-		return nil, fmt.Errorf("未対応のDATABASE_URLです（sqlite://のみ対応）: %s", databaseURL)
+		// URL は資格情報を含みうるので、ログに出るエラーへ載せない
+		return nil, errors.New("未対応のDATABASE_URLです（sqlite://のみ対応）")
 	}
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {

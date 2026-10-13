@@ -59,6 +59,14 @@ func TestInitDatabase_RejectsNonSQLiteURL(t *testing.T) {
 	}
 }
 
+func TestInitDatabase_ErrorDoesNotLeakURLCredentials(t *testing.T) {
+	_, err := initDatabase("postgres://app:not-a-real-password@db.example/app")
+
+	if err == nil || strings.Contains(err.Error(), "not-a-real-password") {
+		t.Fatalf("err = %v, want an error without the URL credentials", err)
+	}
+}
+
 func TestTodosAPI_RejectsMissingToken(t *testing.T) {
 	h := newAPIHandler(newTestDB(t), testToken, 100)
 
