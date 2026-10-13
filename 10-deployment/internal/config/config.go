@@ -187,6 +187,10 @@ func (c *Config) IsTesting() bool {
 func (c *Config) Validate() error {
 	var errors []string
 
+	// 許可する環境を列挙し、staging や ENV の書き間違いでは認証なしの API や既定の秘密値で起動しない
+	if !c.allowsUnauthenticatedAPI() {
+		errors = append(errors, c.validateDeployed()...)
+	}
 	if c.IsProduction() {
 		errors = append(errors, c.validateProduction()...)
 	}
@@ -199,11 +203,6 @@ func (c *Config) Validate() error {
 	// データベースURL形式確認
 	if c.DatabaseURL == "" {
 		errors = append(errors, "DATABASE_URL is required")
-	}
-
-	// 許可する環境を列挙し、staging や ENV の書き間違いでは認証なしの API を公開しない
-	if !c.allowsUnauthenticatedAPI() && len(c.APIToken) < minAPITokenLength {
-		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters unless ENV is development, test, or testing", minAPITokenLength))
 	}
 
 	if c.APIRateLimit < 1 {
@@ -225,15 +224,24 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// validateDeployed development と test 以外のすべての環境で必須の設定を検査する
+func (c *Config) validateDeployed() []string {
+	var errors []string
+	if len(c.APIToken) < minAPITokenLength {
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters unless ENV is development, test, or testing", minAPITokenLength))
+	}
+	if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
+		errors = append(errors, "SESSION_SECRET must be changed unless ENV is development, test, or testing")
+	}
+	if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
+		errors = append(errors, "CSRF_SECRET must be changed unless ENV is development, test, or testing")
+	}
+	return errors
+}
+
 // validateProduction 本番環境だけで必須の設定を検査する
 func (c *Config) validateProduction() []string {
 	var errors []string
-	if c.SessionSecret == "change-this-in-production-please-use-random-64-chars" {
-		errors = append(errors, "SESSION_SECRET must be changed in production")
-	}
-	if c.CSRFSecret == "change-this-csrf-secret-in-production-use-random-32-chars" {
-		errors = append(errors, "CSRF_SECRET must be changed in production")
-	}
 	if c.LogLevel == "debug" {
 		errors = append(errors, "LOG_LEVEL should not be 'debug' in production")
 	}

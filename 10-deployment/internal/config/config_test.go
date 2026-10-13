@@ -160,6 +160,8 @@ func TestLoad_APITokenRequirementByEnvironment(t *testing.T) {
 			t.Chdir(t.TempDir())
 			t.Setenv("ENV", tc.env)
 			t.Setenv("API_TOKEN", tc.token)
+			t.Setenv("SESSION_SECRET", strings.Repeat("s", 32))
+			t.Setenv("CSRF_SECRET", strings.Repeat("c", 16))
 
 			_, err := Load()
 
@@ -227,5 +229,39 @@ func TestLoad_DotEnvCanSelectDevelopment(t *testing.T) {
 
 	if err != nil || cfg.Env != "development" {
 		t.Fatalf("cfg.Env = %q, err = %v, want development without error", cfg.Env, err)
+	}
+}
+
+func TestLoad_SelectsProductionEnvFileWhenENVMissing(t *testing.T) {
+	dir := t.TempDir()
+	content := "API_TOKEN=" + strings.Repeat("t", minAPITokenLength) + "\n" +
+		"SESSION_SECRET=" + strings.Repeat("s", 32) + "\n" +
+		"CSRF_SECRET=" + strings.Repeat("c", 16) + "\n"
+	if err := os.WriteFile(filepath.Join(dir, ".env.production"), []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(dir)
+	for _, key := range []string{"ENV", "API_TOKEN", "SESSION_SECRET", "CSRF_SECRET"} {
+		unsetEnv(t, key)
+	}
+
+	cfg, err := Load()
+
+	if err != nil || cfg.Env != "production" {
+		t.Fatalf("cfg = %+v, err = %v, want production settings loaded from .env.production", cfg, err)
+	}
+}
+
+func TestLoad_RejectsDefaultSecretsOutsideDevelopmentAndTest(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("ENV", "staging")
+	t.Setenv("API_TOKEN", strings.Repeat("t", minAPITokenLength))
+	unsetEnv(t, "SESSION_SECRET")
+	unsetEnv(t, "CSRF_SECRET")
+
+	_, err := Load()
+
+	if err == nil || !strings.Contains(err.Error(), "SESSION_SECRET must be changed") || !strings.Contains(err.Error(), "CSRF_SECRET must be changed") {
+		t.Fatalf("err = %v, want default secret errors for staging", err)
 	}
 }

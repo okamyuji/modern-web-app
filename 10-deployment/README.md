@@ -251,10 +251,10 @@ LOG_LEVEL=info
 
 本番環境では、次の設定を必ず見直してください。
 
-- `SESSION_SECRET`: デフォルト値から変更必須
-- `CSRF_SECRET`: デフォルト値から変更必須
+- `SESSION_SECRET`: デフォルト値から変更必須（`ENV`が`development`、`test`、`testing`以外のとき）
+- `CSRF_SECRET`: デフォルト値から変更必須（同上）
 - `API_TOKEN`: 32文字以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
-- `ENV`: 未設定や空のときは`production`として扱います
+- `ENV`: プロセスの環境変数の値が、`.env`系のファイルの値より優先されます。どちらにも指定がないときは`production`として扱います
 - `LOG_LEVEL`: `debug`以外を推奨
 - `TLS_ENABLED=true`: HTTPS環境での運用推奨
 
