@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -168,5 +170,62 @@ func TestLoad_APITokenRequirementByEnvironment(t *testing.T) {
 				t.Fatalf("err = %v, want an API_TOKEN validation error", err)
 			}
 		})
+	}
+}
+
+func unsetEnv(t *testing.T, key string) {
+	t.Helper()
+	t.Setenv(key, "")
+	os.Unsetenv(key)
+}
+
+func TestLoad_ReadsENVFromDotEnvFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte("ENV=production\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(dir)
+	unsetEnv(t, "ENV")
+	t.Setenv("API_TOKEN", "")
+
+	_, err := Load()
+
+	if err == nil || !strings.Contains(err.Error(), "API_TOKEN") {
+		t.Fatalf("err = %v, want production validation from ENV in .env", err)
+	}
+}
+
+func TestLoad_DefaultsToProductionWhenENVMissing(t *testing.T) {
+	for name, set := range map[string]func(*testing.T){
+		"unset": func(t *testing.T) { unsetEnv(t, "ENV") },
+		"empty": func(t *testing.T) { t.Setenv("ENV", "") },
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			set(t)
+			t.Setenv("API_TOKEN", "")
+
+			_, err := Load()
+
+			if err == nil || !strings.Contains(err.Error(), "API_TOKEN") {
+				t.Fatalf("err = %v, want validation as production", err)
+			}
+		})
+	}
+}
+
+func TestLoad_DotEnvCanSelectDevelopment(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte("ENV=development\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(dir)
+	unsetEnv(t, "ENV")
+	t.Setenv("API_TOKEN", "")
+
+	cfg, err := Load()
+
+	if err != nil || cfg.Env != "development" {
+		t.Fatalf("cfg.Env = %q, err = %v, want development without error", cfg.Env, err)
 	}
 }

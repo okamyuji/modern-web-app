@@ -77,7 +77,8 @@ type Config struct {
 
 func Load() (*Config, error) {
 	// 環境に応じて.envファイルを読み込み
-	env := getEnv("ENV", "development")
+	// 未設定や空の ENV を開発扱いにすると、認証なしの API と既定の秘密値で起動してしまう
+	env := getEnv("ENV", "production")
 
 	envFiles := []string{
 		fmt.Sprintf(".env.%s.local", env),
@@ -93,6 +94,8 @@ func Load() (*Config, error) {
 			break
 		}
 	}
+	// .env 系のファイルに書いた ENV も有効にする。godotenv は既存の環境変数を上書きしないので、プロセスの値が優先される
+	env = getEnv("ENV", "production")
 
 	config := &Config{
 		// アプリケーション設定
@@ -200,7 +203,7 @@ func (c *Config) Validate() error {
 
 	// 許可する環境を列挙し、staging や ENV の書き間違いでは認証なしの API を公開しない
 	if !c.allowsUnauthenticatedAPI() && len(c.APIToken) < minAPITokenLength {
-		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters outside development and test", minAPITokenLength))
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters unless ENV is development, test, or testing", minAPITokenLength))
 	}
 
 	if c.APIRateLimit < 1 {
