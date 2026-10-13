@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -133,6 +134,38 @@ func TestValidate(t *testing.T) {
 			}
 			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 				t.Fatalf("Validate() = %v, want error containing %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestLoad_APITokenRequirementByEnvironment(t *testing.T) {
+	cases := []struct {
+		env     string
+		token   string
+		wantErr bool
+	}{
+		{"development", "", false},
+		{"test", "", false},
+		{"testing", "", false},
+		{"staging", "", true},
+		{"prodution", "", true},
+		{"staging", strings.Repeat("t", minAPITokenLength), false},
+		{"staging", strings.Repeat("t", minAPITokenLength-1), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.env+"/"+strconv.Itoa(len(tc.token)), func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("ENV", tc.env)
+			t.Setenv("API_TOKEN", tc.token)
+
+			_, err := Load()
+
+			if tc.wantErr != (err != nil) {
+				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
+			}
+			if tc.wantErr && !strings.Contains(err.Error(), "API_TOKEN") {
+				t.Fatalf("err = %v, want an API_TOKEN validation error", err)
 			}
 		})
 	}

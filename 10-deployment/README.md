@@ -253,7 +253,7 @@ LOG_LEVEL=info
 
 - `SESSION_SECRET`: デフォルト値から変更必須
 - `CSRF_SECRET`: デフォルト値から変更必須
-- `API_TOKEN`: 32文字以上が必須
+- `API_TOKEN`: 32文字以上が必須（`ENV`が`development`と`test`以外では、未設定だと起動しません）
 - `LOG_LEVEL`: `debug`以外を推奨
 - `TLS_ENABLED=true`: HTTPS環境での運用推奨
 

@@ -173,15 +173,12 @@ func (c *Config) IsProduction() bool {
 	return c.Env == "production"
 }
 
-func (c *Config) IsTesting() bool {
-	return c.Env == "test" || c.Env == "testing"
+func (c *Config) allowsUnauthenticatedAPI() bool {
+	return c.Env == "development" || c.IsTesting()
 }
 
-func (c *Config) GetDatabaseDriver() string {
-	if strings.HasPrefix(c.DatabaseURL, "postgres://") {
-		return "postgres"
-	}
-	return "sqlite3"
+func (c *Config) IsTesting() bool {
+	return c.Env == "test" || c.Env == "testing"
 }
 
 func (c *Config) Validate() error {
@@ -199,6 +196,11 @@ func (c *Config) Validate() error {
 	// データベースURL形式確認
 	if c.DatabaseURL == "" {
 		errors = append(errors, "DATABASE_URL is required")
+	}
+
+	// 許可する環境を列挙し、staging や ENV の書き間違いでは認証なしの API を公開しない
+	if !c.allowsUnauthenticatedAPI() && len(c.APIToken) < minAPITokenLength {
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters outside development and test", minAPITokenLength))
 	}
 
 	if c.APIRateLimit < 1 {
@@ -234,9 +236,6 @@ func (c *Config) validateProduction() []string {
 	}
 	if c.DebugMode {
 		errors = append(errors, "debug mode should be disabled in production")
-	}
-	if len(c.APIToken) < minAPITokenLength {
-		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters in production", minAPITokenLength))
 	}
 
 	// TLS証明書の確認
