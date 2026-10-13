@@ -69,8 +69,11 @@ func main() {
 
 	// Prometheusメトリクスサーバーの起動
 	if cfg.PrometheusEnabled {
-		monitoring.StartMetricsServer(cfg.PrometheusAddr())
-		log.Printf("Prometheusメトリクスサーバーが起動しました: http://%s/metrics", cfg.PrometheusAddr())
+		addr, err := monitoring.StartMetricsServer(cfg.PrometheusAddr())
+		if err != nil {
+			log.Fatalf("Prometheusメトリクスサーバーの起動に失敗しました: %v", err)
+		}
+		log.Printf("Prometheusメトリクスサーバーが起動しました: http://%s/metrics", addr)
 	}
 
 	// ルーターの設定

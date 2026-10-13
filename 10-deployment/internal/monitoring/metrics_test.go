@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -131,5 +132,50 @@ func TestPrometheusMiddleware_RecordsRequestSizeOnlyWithBody(t *testing.T) {
 	}
 	if afterBody != before+1 {
 		t.Fatalf("1-byte body samples = %d, want %d", afterBody, before+1)
+	}
+}
+
+func TestStartMetricsServer_ReturnsErrorForInvalidAddr(t *testing.T) {
+	for _, addr := range []string{"[[::1]]:0", "no-such-host.invalid:0", "127.0.0.1:9999:0"} {
+		t.Run(addr, func(t *testing.T) {
+			if _, err := StartMetricsServer(addr); err == nil {
+				t.Fatalf("StartMetricsServer(%q) = nil error, want listen error", addr)
+			}
+		})
+	}
+}
+
+func TestStartMetricsServer_ServesMetrics(t *testing.T) {
+	ln, err := StartMetricsServer("127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("StartMetricsServer: %v", err)
+	}
+
+	resp, err := http.Get("http://" + ln.String() + "/metrics")
+	if err != nil {
+		t.Fatalf("GET /metrics: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+}
+
+func TestStartMetricsServer_ServesHealth(t *testing.T) {
+	ln, err := StartMetricsServer("127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("StartMetricsServer: %v", err)
+	}
+
+	resp, err := http.Get("http://" + ln.String() + "/health")
+	if err != nil {
+		t.Fatalf("GET /health: %v", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK || string(body) != "OK" {
+		t.Fatalf("status = %d, body = %q, want 200 OK", resp.StatusCode, body)
 	}
 }

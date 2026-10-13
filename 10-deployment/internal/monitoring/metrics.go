@@ -3,6 +3,8 @@ package monitoring
 import (
 	"cmp"
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -219,8 +221,8 @@ func RecordCacheOperation(operation, status string) {
 	cacheOperations.WithLabelValues(operation, status).Inc()
 }
 
-// StartMetricsServer はPrometheusメトリクスサーバーを起動
-func StartMetricsServer(addr string) {
+// StartMetricsServer はPrometheusメトリクスサーバーを起動し、待ち受けたアドレスを返す
+func StartMetricsServer(addr string) (net.Addr, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -230,16 +232,19 @@ func StartMetricsServer(addr string) {
 		w.Write([]byte("OK"))
 	})
 
-	server := &http.Server{
-		Addr:    addr,
-		Handler: mux,
+	// 待ち受けの失敗を起動時のエラーとして返すため、Listen は同期で呼ぶ
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("metrics server failed to listen on %s: %w", addr, err)
 	}
 
+	server := &http.Server{Handler: mux}
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic("metrics server failed to start: " + err.Error())
+		if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
+			panic("metrics server stopped: " + err.Error())
 		}
 	}()
+	return ln.Addr(), nil
 }
 
 // GracefulShutdown はアプリケーションのグレースフルシャットダウンを実行
