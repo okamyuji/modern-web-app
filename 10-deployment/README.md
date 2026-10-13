@@ -34,7 +34,7 @@
 
 - 環境別設定 開発、ステージング、本番の各環境で設定を分けます。
 - 設定バリデーション 起動時に、本番環境で必須の設定がそろっているかを検証します。
-- シークレット管理 `API_TOKEN`を環境変数から受け取ります。`ENV`が`development`、`test`、`testing`以外のとき、32文字未満だと起動しません。
+- シークレット管理 `API_TOKEN`を環境変数から受け取ります。`ENV`が`development`、`test`、`testing`以外のとき、32バイト未満だと起動しません。
 - 12-Factor Appの方針 設定を環境変数で受け取るので、アプリケーションを別の実行環境へ移しやすくなります。
 
 ### コンテナ化
@@ -197,7 +197,7 @@ curl http://localhost:8080/metrics
 curl http://localhost:9090/metrics
 ```
 
-Prometheusメトリクスのサーバーは、既定で`127.0.0.1`だけで待ち受けます。別のホストやコンテナのPrometheusから取得するときは、`PROMETHEUS_HOST=0.0.0.0`を設定します。このエンドポイントには認証がないので、開くときはファイアウォールなどで取得元を限ってください。
+Prometheusメトリクスのサーバーは、既定で`127.0.0.1`だけで待ち受けます。別のホストやコンテナのPrometheusから取得するときは、`PROMETHEUS_HOST=0.0.0.0`を設定します。このエンドポイントには認証がないので、開くときはファイアウォールなどで取得元を限ってください。`0.0.0.0`ではIPv4とIPv6の両方で待ち受けるので、IPv6の規則も設定します。
 
 ## 設定管理
 
@@ -217,7 +217,7 @@ VERSION=v1.0.0
 #### セキュリティ設定
 
 ```bash
-API_TOKEN=<32文字以上のランダム文字列>
+API_TOKEN=<32バイト以上のランダム文字列>  # 例: openssl rand -hex 32
 API_RATE_LIMIT=100           # クライアントIPごとの1分あたりの要求数
 TLS_ENABLED=false
 ```
@@ -252,7 +252,7 @@ LOG_LEVEL=info
 
 本番環境では、次の設定を必ず見直してください。
 
-- `API_TOKEN`: 32文字以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
+- `API_TOKEN`: 32バイト以上が必須（`ENV`が`development`、`test`、`testing`以外では、未設定だと起動しません）
 - `ENV`: プロセスの環境変数の値が、`.env`系のファイルの値より優先されます。どちらにも指定がないときは`production`として扱います。使える値は`development`、`test`、`testing`、`staging`、`production`で、ほかの値では起動しません
 - `LOG_LEVEL`: `debug`以外を推奨
 - `TLS_ENABLED=true`: HTTPS環境での運用推奨
@@ -333,7 +333,7 @@ FROM alpine:3.24
 make docker-build
 
 # コンテナ実行（本番モードで起動するためAPI_TOKENが必要。DBは名前付きボリュームdeployment-demo-dataに保存）
-API_TOKEN=<32文字以上のランダム文字列> make docker-run
+API_TOKEN=<32バイト以上のランダム文字列> make docker-run
 
 # イメージのプッシュ
 make docker-push
@@ -491,7 +491,8 @@ tail -f logs/deploy.log
 
 ### 実装済みセキュリティ機能
 
-- Todo APIのBearerトークン認証（CookieでなくヘッダーでトークンをやりとりするのでCSRFの対象になりません）
+- Todo APIのBearerトークン認証（Cookieを使わないので、トークンを設定した環境ではCSRFの対象になりません）
+- Todo作成時の`Content-Type: application/json`の必須化（トークンを設定しない開発環境でも、他サイトのページからTodoを作れません）
 - 入力値検証
 - SQLインジェクション対策
 

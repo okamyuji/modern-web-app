@@ -238,7 +238,8 @@ func StartMetricsServer(addr string) (net.Addr, error) {
 		return nil, fmt.Errorf("metrics server failed to listen on %s: %w", addr, err)
 	}
 
-	server := &http.Server{Handler: mux}
+	// ヘッダーを送りきらない接続でファイル記述子を使い切られないよう、待ち時間に上限を設ける
+	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
 			panic("metrics server stopped: " + err.Error())

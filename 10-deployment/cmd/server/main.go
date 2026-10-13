@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"mime"
+	"net"
 	"net/http"
 	"os"
 	"slices"
@@ -88,6 +90,11 @@ func main() {
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 
+	// 待ち受けに成功してから起動ログを出すため、Listen は Serve と分けて呼ぶ
+	ln, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		log.Fatalf("サーバーの起動に失敗しました: %v", err)
+	}
 	log.Printf("サーバーが起動しました: http://localhost:%s", cfg.Port)
 
 	// グレースフルシャットダウンの設定
@@ -97,7 +104,7 @@ func main() {
 	})
 
 	// サーバー起動
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("サーバーの起動に失敗しました: %v", err)
 	}
 
@@ -329,6 +336,11 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(todos)
 
 		case http.MethodPost:
+			// text/plain などの単純リクエストはプリフライトなしで他サイトから送れるので、JSON 以外は受け付けない
+			if mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mediaType != "application/json" {
+				http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
+				return
+			}
 			var todo Todo
 			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 			if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {

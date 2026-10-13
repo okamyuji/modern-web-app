@@ -225,7 +225,7 @@ func (c *Config) Validate() error {
 func (c *Config) validateDeployed() []string {
 	var errors []string
 	if len(c.APIToken) < minAPITokenLength {
-		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d characters unless ENV is development, test, or testing", minAPITokenLength))
+		errors = append(errors, fmt.Sprintf("API_TOKEN must be at least %d bytes unless ENV is development, test, or testing", minAPITokenLength))
 	}
 	return errors
 }

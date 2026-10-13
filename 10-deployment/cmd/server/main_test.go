@@ -365,3 +365,34 @@ func TestClientIP(t *testing.T) {
 		}
 	}
 }
+
+func TestTodosAPI_PostRequiresJSONContentType(t *testing.T) {
+	cases := []struct {
+		contentType string
+		want        int
+	}{
+		{"text/plain", http.StatusUnsupportedMediaType},
+		{"application/x-www-form-urlencoded", http.StatusUnsupportedMediaType},
+		{"multipart/form-data; boundary=x", http.StatusUnsupportedMediaType},
+		{"", http.StatusUnsupportedMediaType},
+		{"application/json; =bad", http.StatusUnsupportedMediaType},
+		{"application/json", http.StatusCreated},
+		{"Application/JSON; charset=utf-8", http.StatusCreated},
+	}
+	for _, tc := range cases {
+		t.Run(tc.contentType, func(t *testing.T) {
+			h := newAPIHandler(newTestDB(t), "", 100)
+			req := httptest.NewRequest(http.MethodPost, "/api/todos", strings.NewReader(`{"title":"drive-by"}`))
+			if tc.contentType != "" {
+				req.Header.Set("Content-Type", tc.contentType)
+			}
+			rec := httptest.NewRecorder()
+
+			h.ServeHTTP(rec, req)
+
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+		})
+	}
+}
