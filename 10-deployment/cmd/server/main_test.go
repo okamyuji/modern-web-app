@@ -59,6 +59,12 @@ func TestInitDatabase_RejectsNonSQLiteURL(t *testing.T) {
 	}
 }
 
+func TestInitDatabase_RejectsEmptySQLitePath(t *testing.T) {
+	if _, err := initDatabase("sqlite://"); err == nil {
+		t.Fatal("expected error for sqlite:// without a path")
+	}
+}
+
 func TestInitDatabase_ErrorDoesNotLeakURLCredentials(t *testing.T) {
 	_, err := initDatabase("postgres://app:not-a-real-password@db.example/app")
 
@@ -176,6 +182,29 @@ func TestTodosAPI_ValidatesTitle(t *testing.T) {
 
 			if rec.Code != tc.want {
 				t.Fatalf("status = %d, want %d", rec.Code, tc.want)
+			}
+		})
+	}
+}
+
+func TestTodosAPI_ValidatesPriority(t *testing.T) {
+	cases := map[string]int{
+		"":           http.StatusCreated,
+		"low":        http.StatusCreated,
+		"medium":     http.StatusCreated,
+		"high":       http.StatusCreated,
+		"urgent":     http.StatusBadRequest,
+		"High":       http.StatusBadRequest,
+		"low-random": http.StatusBadRequest,
+	}
+	for priority, want := range cases {
+		t.Run(priority, func(t *testing.T) {
+			h := newAPIHandler(newTestDB(t), testToken, 100)
+
+			rec := doRequest(h, http.MethodPost, `{"title":"x","priority":"`+priority+`"}`, testToken, "")
+
+			if rec.Code != want {
+				t.Fatalf("priority %q status = %d, want %d", priority, rec.Code, want)
 			}
 		})
 	}
@@ -303,9 +332,14 @@ func TestRateLimiter_RetryAfterIsTimeLeftInWindow(t *testing.T) {
 
 func TestClientIP(t *testing.T) {
 	cases := map[string]string{
-		"192.0.2.1:1234":   "192.0.2.1",
-		"[2001:db8::1]:80": "2001:db8::1",
-		"no-port":          "no-port",
+		"192.0.2.1:1234":        "192.0.2.1",
+		"[2001:db8::1]:80":      "2001:db8::/64",
+		"[2001:db8::ffff:1]:80": "2001:db8::/64",
+		"[2001:db8:0:1::1]:80":  "2001:db8:0:1::/64",
+		"[::ffff:192.0.2.1]:80": "192.0.2.1",
+		"no-port":               "no-port",
+		"host.example:80":       "host.example",
+		"[fe80::1%en0]:80":      "fe80::/64",
 	}
 	for remote, want := range cases {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)

@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"cmp"
 	"context"
 	"net/http"
 	"os"
@@ -154,11 +155,6 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// リクエストサイズの記録
-		if r.ContentLength > 0 {
-			httpRequestSize.WithLabelValues(r.Method, r.URL.Path).Observe(float64(r.ContentLength))
-		}
-
 		// カスタムレスポンスライター
 		sw := &statusWriter{
 			ResponseWriter: w,
@@ -170,14 +166,30 @@ func PrometheusMiddleware(next http.Handler) http.Handler {
 
 		// メトリクスの記録
 		duration := time.Since(start).Seconds()
-		endpoint := r.URL.Path
-		method := r.Method
+		// パスやメソッドをそのままラベルにすると、未認証の要求だけで系列が際限なく増える。
+		// ServeMux がルーティング時に設定する登録済みパターンを使う
+		endpoint := cmp.Or(r.Pattern, "other")
+		method := metricMethod(r.Method)
 		statusCode := strconv.Itoa(sw.status)
+
+		if r.ContentLength > 0 {
+			httpRequestSize.WithLabelValues(method, endpoint).Observe(float64(r.ContentLength))
+		}
 
 		httpRequestsTotal.WithLabelValues(method, endpoint, statusCode).Inc()
 		httpRequestDuration.WithLabelValues(method, endpoint).Observe(duration)
 		httpResponseSize.WithLabelValues(method, endpoint).Observe(float64(sw.size))
 	})
+}
+
+// metricMethod 標準のメソッド以外を OTHER にまとめる
+func metricMethod(method string) string {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodDelete, http.MethodOptions, http.MethodConnect, http.MethodTrace:
+		return method
+	}
+	return "OTHER"
 }
 
 // ビジネスメトリクスのヘルパー関数

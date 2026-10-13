@@ -6,6 +6,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/netip"
 	"strconv"
 	"sync"
 	"time"
@@ -87,12 +88,22 @@ func (rl *rateLimiter) retryAfter() time.Duration {
 	return rl.window - rl.now().Sub(rl.start)
 }
 
-// clientIP 接続元の IP を返す。X-Forwarded-For は偽装できるので使わない
+// clientIP レート制限のキーとして接続元を返す。X-Forwarded-For は偽装できるので使わない
 // shortcut: リバースプロキシの後ろでは全クライアントが 1 つの上限を共有する。プロキシを置くときは信頼するプロキシ経由の X-Forwarded-For だけを読むようにする
 func clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
 	}
-	return host
+	addr, err := netip.ParseAddr(host)
+	if err != nil {
+		return host
+	}
+	addr = addr.Unmap().WithZone("")
+	if addr.Is4() {
+		return addr.String()
+	}
+	// IPv6 は利用者 1 人に /64 が割り当てられるのが普通なので、アドレス単位だと上限を回避できる
+	prefix, _ := addr.Prefix(64)
+	return prefix.String()
 }

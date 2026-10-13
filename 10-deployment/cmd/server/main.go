@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -101,7 +102,8 @@ func main() {
 
 func initDatabase(databaseURL string) (*sql.DB, error) {
 	path, ok := strings.CutPrefix(databaseURL, "sqlite://")
-	if !ok {
+	// 空のパスは SQLite では一時 DB になり、接続を閉じるとデータが消える
+	if !ok || path == "" {
 		// URL は資格情報を含みうるので、ログに出るエラーへ載せない
 		return nil, errors.New("未対応のDATABASE_URLです（sqlite://のみ対応）")
 	}
@@ -336,6 +338,11 @@ func handleTodos(db *sql.DB) http.HandlerFunc {
 			}
 			if strings.TrimSpace(todo.Title) == "" || utf8.RuneCountInString(todo.Title) > maxTitleLength {
 				http.Error(w, fmt.Sprintf("title is required and must be at most %d characters", maxTitleLength), http.StatusBadRequest)
+				return
+			}
+			// priority はメトリクスのラベルになるので、値の種類を限る
+			if !slices.Contains([]string{"", "low", "medium", "high"}, todo.Priority) {
+				http.Error(w, "priority must be one of low, medium, high", http.StatusBadRequest)
 				return
 			}
 
