@@ -1,6 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+/* utilities を layer 外に置く。layer 内だと cmd/server/main.go の inline フォールバック style（h1, p など）に負ける */
+@import "tailwindcss/utilities.css";
+@config "../../tailwind.config.js";
+
+/* v4 既定の単位なし行高だと .version-info 内の 18px の p まで行が伸び、h-96 の枠からはみ出す */
+@theme {
+    --text-sm--line-height: 1.25rem;
+}
 
 /* カスタムスタイル */
 .btn {
