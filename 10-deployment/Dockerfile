@@ -52,16 +52,12 @@ RUN addgroup -g 1000 -S appgroup && \
 
 WORKDIR /app
 
-# 必要なディレクトリの作成
-RUN mkdir -p static logs && \
-    chown -R appuser:appgroup /app
+# 実行ユーザーが書き込めるのはデータとログだけにし、バイナリと静的ファイルは root 所有のままにする
+RUN mkdir -p data logs && \
+    chown appuser:appgroup data logs
 
-# 必要なファイルのコピー
-COPY --from=builder --chown=appuser:appgroup /app/server ./
-COPY --from=builder --chown=appuser:appgroup /app/static ./static
-
-# 実行権限の設定
-RUN chmod +x ./server
+COPY --from=builder /app/server ./
+COPY --from=builder /app/static ./static
 
 # 実行ユーザーの切り替え
 USER appuser
@@ -70,6 +66,7 @@ USER appuser
 ENV ENV=production
 ENV PORT=8080
 ENV LOG_LEVEL=info
+ENV DATABASE_URL=sqlite:///app/data/deployment_demo.db
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
