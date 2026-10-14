@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    uses: okamyuji/reusable-workflows/.github/workflows/security-scan.yml@v1
+
+  go:
+    # 章ごとに独立した Go モジュールなので、モジュールごとに中央の Go CI を呼ぶ
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - 01-env-setup
+          - 02-golang-patterns
+          - 03-htmx
+          - 04-alpinejs
+          - 05-tailwind
+          - 06-todo-app
+          - 07-chat-app
+          - 08-performance-security
+          - 09-test-debug
+          - 10-deployment
+    uses: okamyuji/reusable-workflows/.github/workflows/go-ci.yml@v1
+    with:
+      working-directory: ${{ matrix.module }}
