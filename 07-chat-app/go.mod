@@ -1,6 +1,6 @@
 module chat-app
 
-go 1.24.3
+go 1.26.10
 
 require (
 	github.com/google/uuid v1.6.0
