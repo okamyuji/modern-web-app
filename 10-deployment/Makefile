@@ -204,8 +204,8 @@ install-tools: ## 開発ツールをインストール
 	@echo "開発ツールをインストール中..."
 	go install github.com/a-h/templ@latest
 	go install golang.org/x/tools/cmd/goimports@latest
-	@if command -v pnpm >/dev/null 2>&1; then \
-		pnpm add -g html-minifier imagemin-cli; \
+	@if command -v npm >/dev/null 2>&1; then \
+		npm install -g html-minifier imagemin-cli; \
 	fi
 	@echo "開発ツールのインストール完了"
 
