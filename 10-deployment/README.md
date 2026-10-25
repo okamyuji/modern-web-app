@@ -113,7 +113,7 @@ cp .env.example .env
 go mod download
 
 # Node.js依存関係
-npm install
+pnpm install --frozen-lockfile
 
 # 必要なツールのインストール
 go install github.com/a-h/templ@latest

@@ -32,10 +32,10 @@ help: ## このヘルプを表示
 setup: ## 開発環境のセットアップ
 	@echo "開発環境をセットアップ中..."
 	go mod download
-	@if command -v npm >/dev/null 2>&1; then \
-		npm install; \
+	@if command -v pnpm >/dev/null 2>&1; then \
+		pnpm install --frozen-lockfile; \
 	else \
-		echo "npmが見つかりません。Node.jsをインストールしてください。"; \
+		echo "pnpmが見つかりません。Node.jsとpnpmをインストールしてください。"; \
 	fi
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
@@ -53,18 +53,18 @@ dev: ## 開発サーバーを起動
 	ENV=development go run cmd/server/main.go
 
 css-dev: ## Tailwind CSSを開発モードでビルド（ウォッチモード）
-	@if command -v npx >/dev/null 2>&1; then \
-		npx tailwindcss -i $(CSS_INPUT) -o $(CSS_OUTPUT) --watch; \
+	@if command -v pnpm >/dev/null 2>&1; then \
+		pnpm exec tailwindcss -i $(CSS_INPUT) -o $(CSS_OUTPUT) --watch; \
 	else \
-		echo "npxが見つかりません。Node.jsをインストールしてください。"; \
+		echo "pnpmが見つかりません。Node.jsとpnpmをインストールしてください。"; \
 	fi
 
 css-build: ## Tailwind CSSを本番用にビルド
 	@echo "Tailwind CSSをビルド中..."
-	@if command -v npx >/dev/null 2>&1; then \
-		NODE_ENV=production npx tailwindcss -i $(CSS_INPUT) -o $(CSS_OUTPUT) --minify; \
+	@if command -v pnpm >/dev/null 2>&1; then \
+		NODE_ENV=production pnpm exec tailwindcss -i $(CSS_INPUT) -o $(CSS_OUTPUT) --minify; \
 	else \
-		echo "npxが見つかりません。CSSの最適化をスキップします。"; \
+		echo "pnpmが見つかりません。CSSの最適化をスキップします。"; \
 	fi
 
 templ-generate: ## Templテンプレートを生成
@@ -221,8 +221,8 @@ version: ## バージョン情報を表示
 dev-deps: ## 開発依存関係のインストール
 	@echo "開発依存関係をインストール中..."
 	go mod tidy
-	@if command -v npm >/dev/null 2>&1; then \
-		npm install --include=dev; \
+	@if command -v pnpm >/dev/null 2>&1; then \
+		pnpm install; \
 	fi
 
 dev-watch: ## ファイル変更を監視して自動リビルド
