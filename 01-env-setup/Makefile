@@ -2,13 +2,13 @@
 
 dev:
 	@echo "Starting development server..."
-	@npm run dev &
+	@pnpm run dev &
 	@air
 
 build:
 	@echo "Building application..."
 	@templ generate
-	@npm run build
+	@pnpm run build
 	@go build -o ./bin/server ./cmd/server
 
 clean:

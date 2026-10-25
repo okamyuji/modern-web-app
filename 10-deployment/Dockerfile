@@ -18,8 +18,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Node.jsの依存関係のキャッシュ
-COPY package*.json ./
-RUN npm ci
+# Alpine の nodejs には corepack が含まれないため npm で入れる。pnpm 11 は Node 22 以上が必要
+RUN npm install -g corepack@0.36.0 && corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # ソースコードのコピー
 COPY . .
@@ -29,7 +31,7 @@ ARG VERSION=dev
 ARG BUILD_TIME=unknown
 
 # Tailwind CSSのビルド
-RUN npm run build:css
+RUN pnpm run build:css
 
 # Goアプリケーションのビルド（go-sqlite3 は cgo 必須）
 RUN CGO_ENABLED=1 go build \

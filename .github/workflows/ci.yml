@@ -31,3 +31,13 @@ jobs:
     uses: okamyuji/reusable-workflows/.github/workflows/go-ci.yml@v1
     with:
       working-directory: ${{ matrix.module }}
+
+  node:
+    # Tailwind CLI のビルドとロックファイルの 7 日ルールを確認する
+    uses: okamyuji/reusable-workflows/.github/workflows/node-ci.yml@v1
+    permissions:
+      contents: read
+    with:
+      working-directory: 01-env-setup
+      node-version: "24"
+      test-command: run build
