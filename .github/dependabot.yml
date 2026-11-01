@@ -8,3 +8,37 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  - package-ecosystem: npm
+    directories:
+      - "/01-env-setup"
+      - "/10-deployment"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+      major:
+        update-types: [major]
+  - package-ecosystem: gomod
+    directories:
+      - "/01-env-setup"
+      - "/02-golang-patterns"
+      - "/03-htmx"
+      - "/04-alpinejs"
+      - "/05-tailwind"
+      - "/06-todo-app"
+      - "/07-chat-app"
+      - "/08-performance-security"
+      - "/09-test-debug"
+      - "/10-deployment"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+      major:
+        update-types: [major]
